@@ -34,6 +34,7 @@ apps:
     branch: sg2.5
     phpwax: master
     cms: master
+    databases: [strangeglue, boards]
   
   intermediary:
     server: obb1
@@ -57,6 +58,26 @@ apps:
     password: mustard
     databases: [multipack, multipack_forum]
     
+  aquarius:
+    server: obb1
+    domain: aquarius.org.uk
+    user: aquarius
+    password: aquarius405
+    aliases: [aquarius.oneblackbear.com, www.aquarius.org.uk]
+    
+  eb:
+    server: obb1
+    domain: eb.oneblackbear.com
+    user: eb
+    password: eb901
+    
+  livediecry:
+    server: obb1
+    domain: livediecry.com
+    user: livediecry
+    password: ldc471
+    aliases: [www.livediecry.com, ldc.oneblackbear.com]
+    repository: git@github.com:oneblackbear/live-die-cry.git"
   
   ######## OBB2 Applications #####################
   subaru:
