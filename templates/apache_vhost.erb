@@ -1,0 +1,16 @@
+<VirtualHost <%=public_ip%>:80>
+  ServerName <%=domain%>
+  <%aliases.each do |aliass|%>
+    ServerAlias <%=aliass%>
+  <%end%>
+  DocumentRoot /home/<%=application%>/public
+  DirectoryIndex index.html index.htm index.php
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml application/x-javascript text/css
+  SetOutputFilter DEFLATE
+
+  <Directory /home/<%=application%>/public>
+    Options Indexes IncludesNOEXEC FollowSymLinks
+    allow from all
+    AllowOverride All
+  </Directory>
+</VirtualHost>

@@ -1,0 +1,87 @@
+servers:
+  obb1: 
+    domain: obb1.oneblackbear.com
+  obb2: 
+    domain: obb2.oneblackbear.com
+  obb3: 
+    domain: obb3.oneblackbear.com
+  obb4: 
+    domain: obb4.oneblackbear.com
+  obb5: 
+    domain: obb5.oneblackbear.com
+  obb6: 
+    domain: obb6.oneblackbear.com
+
+apps:  
+  ######## OBB1 Applications #####################
+  obb:
+    server: obb1
+    domain: oneblackbear.com
+    user: obb
+    password: obb999
+    aliases: [www.oneblackbear.com, oneblackbear.co.uk, www.oneblackbear.co.uk]
+    repository: git@github.com:oneblackbear/obb.git"
+    phpwax: master
+    cms: master
+  
+  strangeglue:
+    server: obb1
+    domain: strangeglue.com
+    user: strangeglue
+    password: strange101glue
+    aliases: [strangeglue.co.uk, www.strangeglue.com, www.strangeglue.co.uk]
+    repository: git@github.com:rossriley/strangeglue.git
+    branch: sg2.5
+    phpwax: master
+    cms: master
+  
+  intermediary:
+    server: obb1
+    domain: intermediaryfirst.co.uk
+    user: intermediary
+    password: inter393
+    
+  unsuitable:
+    server: obb1
+    domain: weareunsuitable.com
+    user: unsuitable
+    password: snowman1
+    repository: git@github.com:oneblackbear/unsuitable.git"
+    phpwax: master
+    cms: a0931a79c2
+    
+  multipack:
+    server: obb1
+    domain: multipack.co.uk
+    user: multipack
+    password: mustard
+    databases: [multipack, multipack_forum]
+    
+  
+  ######## OBB2 Applications #####################
+  subaru:
+    server: obb2
+    domain: subaru.oneblackbear.com
+    user: subaru
+    password: suba22 
+    repository:
+  
+  made:
+    server: obb2
+    domain: made-schools.com
+    user: made
+    password: made101
+    aliases: [www.made-schools.com]
+    repository:
+  
+  ######## OBB3 Applications #####################
+  mensgroom:
+    server: obb3
+    domain: mensgroom.co.uk
+    user: mensgroom
+    password: mensgroom3099
+    aliases: [www.mensgroom.co.uk]
+    repository:
+  
+  ######## OBB4 Applications #####################
+  
