@@ -9,8 +9,8 @@ task :config_setup do
 end
 
 task :config_write do
-  #File.open('config.yml', 'w') { |f| f.puts options.to_yaml }
-  puts "Hello I'm about to mangle your config file"
+  File.open('config.yml', 'w') { |f| f.puts options.to_yaml }
+  #puts "Hello I'm about to mangle your config file"
 end
 
 
@@ -119,7 +119,7 @@ namespace :app do
     run "svn export #{repository} #{deploy_to} --force"
   end
   
-  desc "Installs plugins if specified"
+  desc "Installs cms plugin if specified"
   task :cms_deploy do
     begin
       run "ls plugins/cms/.git"
@@ -169,7 +169,7 @@ namespace :app do
   
   desc "Decides whether to do a simple filesystem backup, or use git to backup databases and code"
   task :backup_check do 
-    if defined? repository
+    if defined? "#{repository}"
       if repository.include? "git"
         git_mysql_backup
         upload_only_backup
@@ -178,6 +178,7 @@ namespace :app do
         upload_only_backup
       end
     else
+      puts "No repository for #{application}"
       standard_mysql_backup
       simple_fs_backup
     end
@@ -297,6 +298,14 @@ namespace :app do
     with_user("root", "#{root_pass}") do 
       run "useradd -p `openssl passwd #{passwd_to_add}` #{user_to_add}"
     end
+  end
+  
+  task :setup_mysql do
+    with_user("root", "#{root_pass}") do
+      app_databases.each do |db|
+        run "mysql -uroot -p#{root_pass} -e 'CREATE DATABASE #{db}'"
+      end
+    end
     
   end
   
@@ -362,6 +371,10 @@ namespace :app do
     with_user("root", "#{root_pass}") do
       run "rsync -avzh . -e ssh root@#{new_server}:/backup/#{application}/ --exclude 'tmp/*' --exclude '.git/*'"
     end
+    options["apps"]["#{application}"]["server"] = line
+    config_write
+    try_login
+    restore
   end
   
 end

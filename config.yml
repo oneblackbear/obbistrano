@@ -11,6 +11,8 @@ servers:
     domain: obb5.oneblackbear.com
   obb6: 
     domain: obb6.oneblackbear.com
+  obb7:
+    domain: obb7.oneblackbear.com
 
 apps:  
   ######## OBB1 Applications #####################
