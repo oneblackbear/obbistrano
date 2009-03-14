@@ -1,6 +1,6 @@
-== Automated Server and application deployment
+= Automated Server and application deployment
 
-=== Server-wide setup
+== Server-wide setup
 
 @cap host:setup -s h=xxxx@
 Ensures that there is a setup for each app on the specified server.
@@ -14,7 +14,7 @@ Triggers an Amazon S3 backup of the backup folder.
 
 
 
-=== Application Level Setup
+== Application Level Setup
 
 @cap app:deploy -s a=xxxx@
 
