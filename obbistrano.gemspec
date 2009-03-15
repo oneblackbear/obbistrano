@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.date = Time.now
   s.description = %q{An extension to Capistrano to allow deploys to Slicehost for One Black Bear}
   s.email = %q{ross@oneblackbear.com}
-  s.files = ["README.txt", "obbistrano.gemspec"] 
+  s.files = ["README.textile", "obbistrano.gemspec"] 
   s.files << Dir["lib/*"]
   s.homepage = %q{http://github.com/oneblackbear/obbistrano}
   s.rubygems_version = %q{1.3.0}
