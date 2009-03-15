@@ -2,9 +2,10 @@
 
 Gem::Specification.new do |s|
   s.name = %q{obbistrano}
-  s.version = "1.0.4"
+  s.version = "1.0.5"
   s.authors = ["Ross Riley", "One Black Bear"]
   s.date = Time.now
+  s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.description = %q{An extension to Capistrano to allow deploys to Slicehost for One Black Bear}
   s.email = %q{ross@oneblackbear.com}
   s.files = ["README.textile", "obbistrano.gemspec"] 
@@ -12,6 +13,19 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://github.com/oneblackbear/obbistrano}
   s.rubygems_version = %q{1.3.0}
   s.summary = %q{Adds extra namespaces to Capistrano to allow simple setup, deploys and maintenance.}
-  s.add_dependency('capistrano', '>= 2.5')
-  s.add_dependency('activeresource', '>= 2')
+  if s.respond_to? :specification_version then
+      current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
+      s.specification_version = 2
+
+      if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
+        s.add_runtime_dependency(%q<capistrano>, [">= 2.5"])
+        s.add_runtime_dependency(%q<activeresource>, [">= 2"])
+      else
+        s.add_dependency(%q<capistrano>, [">= 2.5"])
+        s.add_dependency(%q<activeresource>, [">= 2"])
+      end
+    else
+      s.add_dependency(%q<capistrano>, [">= 2.5"])
+      s.add_dependency(%q<activeresource>, [">= 2"])
+    end
 end
