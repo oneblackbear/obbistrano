@@ -1,4 +1,4 @@
-Capistrano.configuration(:must_exist).load do
+Capistrano::Configuration(:must_exist).load do
 
   desc "Setup Application Config"
   task :config_setup do
