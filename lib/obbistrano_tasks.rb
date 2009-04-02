@@ -1,4 +1,4 @@
-Capistrano::Configuration(:must_exist).load do
+Capistrano::Configuration.instance(:must_exist).load do
 
   #### Performs the initial setup for tasks ####
   task :config_setup do
