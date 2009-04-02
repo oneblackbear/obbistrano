@@ -1,17 +1,10 @@
 Capistrano::Configuration(:must_exist).load do
 
-  desc "Setup Application Config"
+  #### Performs the initial setup for tasks ####
   task :config_setup do
-  #   options = YAML.load(File.read("config.yml"))
-  #   set :working_server, h rescue nil
-  #   set :working_app, a rescue nil
     set :root_pass, root rescue nil
   end
-  # 
-  # task :config_write do
-  #   File.open('config.yml', 'w') { |f| f.puts options.to_yaml }
-  #   #puts "Hello I'm about to mangle your config file"
-  # end
+
  
   namespace :slicehost do
  
@@ -67,39 +60,6 @@ Capistrano::Configuration(:must_exist).load do
  
   end
 
-
-
-
-  namespace :host do
-  
-    desc "Checks we have information to proceed with server operations"
-    task :config_check do 
-      config_setup
-      "#{working_server}" rescue @parent.logger.log 0,"You need to specify a host to run the operation on. Use cap task -s h=yourhost"
-      @use_applications = [ ]
-      options["apps"].each do |app, settings|
-        @use_applications << app if settings["server"]==working_server
-      end
-    end
-  
-  
-    desc "Performs a local backup of the applications and databases on the server"
-    task :backup do
-      config_check
-      @use_applications.each do |app|
-        set :working_app, app
-        @parent.app.backup
-      end
-    end
-  
-    desc "Backs up the local backup folder to remote Amazon S3 storage"
-    task :s3backup do
-      config_check
-    end
-  
-
-  
-  end
   
   namespace :app do  
   
@@ -170,6 +130,7 @@ Capistrano::Configuration(:must_exist).load do
         run "cd wax && git pull origin master"
       end
       run "cd wax && git checkout #{phpwax}"
+      run "cd wax && git pull origin #{phpwax}"
     end
   
     ####### ##############
@@ -218,7 +179,6 @@ Capistrano::Configuration(:must_exist).load do
           upload_only_backup
         end
       else
-        puts "No repository for #{application}"
         standard_mysql_backup
         simple_fs_backup
       end
@@ -401,6 +361,23 @@ Capistrano::Configuration(:must_exist).load do
       end
     
     end
+    
+    task :crontab_configuration do
+      # setup crontab file
+      crontab_file = render :template => <<-EOF
+      # WARNING: this file has been automatically setup by the Capistrano script
+
+      # this task will run every hour:
+      # * */1 * * *    root    ruby #{deploy_to}/current/script/runner -e production 'Class.method(example)'
+      EOF
+    
+      put crontab_file, "#{deploy_to}/crontab_setup"
+     
+      # deploy it by copying over one that exists
+      run "crontab ./crontab_setup"
+    
+    end
+    
   
     # =============================================================================
     # +MIGRATING+ APPLICATIONS
