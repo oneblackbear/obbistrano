@@ -116,7 +116,11 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "cd plugins/cms && git remote add origin git://github.com:phpwax/wildfire.git"
       end
       run "cd plugins/cms && git fetch"
-      run "cd plugins/cms && git checkout -b #{cms} origin/#{cms}"
+      begin
+        run "cd plugins/cms && git checkout -b #{cms} origin/#{cms}"
+      rescue
+        "cd plugins/cms && git checkout #{cms}"
+      end
     end
   
     task :php_wax_deploy do
@@ -128,7 +132,11 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "cd wax && git remote add origin git://github.com/phpwax/phpwax.git"
       end
       run "cd wax && git fetch"
-      run "cd wax && git checkout -b #{phpwax} origin/#{phpwax}"
+      begin
+        run "cd wax && git checkout -b #{phpwax} origin/#{phpwax}"
+      rescue
+        "cd wax && git checkout #{phpwax}"
+      end
     end
   
     ####### ##############
@@ -290,6 +298,13 @@ Capistrano::Configuration.instance(:must_exist).load do
     desc "Uses the specified repository to deploy an application. Also checks for correct versions of PHPWax and plugins."
     task :default do
       app.deploy
+    end
+  end
+  
+  namespace :setup do
+    desc "Sets up the server with a user, home directory and mysql login."
+    task :default do
+      app.setup
     end
   end
 
