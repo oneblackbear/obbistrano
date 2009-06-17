@@ -98,10 +98,15 @@ Capistrano::Configuration.instance(:must_exist).load do
       begin
         run "ls #{deploy_to}/.git"
       rescue
-        run "git init"
-        run "git remote add origin #{repository}"
+        run "cd #{deploy_to} && git init"
+        run "cd #{deploy_to} && git remote add origin #{repository}"
       end
-      run "git pull origin #{branch}"
+      run "cd #{deploy_to} && git fetch"
+      begin
+        run "cd #{deploy_to} && git checkout -b #{branch} origin/#{branch}"
+      rescue
+        "cd #{deploy_to} && git checkout #{branch}"
+      end
     end
   
     task :svn_deploy do
