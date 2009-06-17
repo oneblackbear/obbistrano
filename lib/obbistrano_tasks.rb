@@ -94,6 +94,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :git_deploy do
+      logger.level = Capistrano::Logger::IMPORTANT # least verbose 
       begin
         run "ls #{deploy_to}/.git"
       rescue
@@ -108,6 +109,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :cms_deploy do
+      logger.level = Capistrano::Logger::IMPORTANT # least verbose 
       begin
         run "ls plugins/cms/.git"
       rescue
@@ -124,6 +126,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :php_wax_deploy do
+      logger.level = Capistrano::Logger::IMPORTANT # least verbose 
       begin
         run "ls wax/.git"
       rescue
