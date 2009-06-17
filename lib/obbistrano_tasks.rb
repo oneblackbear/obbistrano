@@ -63,7 +63,6 @@ Capistrano::Configuration.instance(:must_exist).load do
   
   namespace :app do  
   
-  
     task :config_check do
       config_setup
       databases rescue set(:databases, ["#{application}"])
@@ -81,7 +80,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     # DEPLOYING APPLICATIONS
     # =============================================================================
   
-    desc "Uses the specified repository to deploy an application. Also checks for correct versions of PHPWax and plugins."
     task :deploy do
       config_check
       deploy_check
@@ -117,7 +115,8 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "cd plugins/cms && git init"
         run "cd plugins/cms && git remote add origin git://github.com:phpwax/wildfire.git"
       end
-      run "cd plugins/cms && git checkout #{cms}"
+      run "cd plugins/cms && git fetch"
+      run "cd plugins/cms && git checkout -b #{cms} origin/#{cms}"
     end
   
     task :php_wax_deploy do
@@ -127,10 +126,9 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "mkdir wax"
         run "cd wax && git init"
         run "cd wax && git remote add origin git://github.com/phpwax/phpwax.git"
-        run "cd wax && git pull origin master"
       end
-      run "cd wax && git checkout #{phpwax}"
-      run "cd wax && git pull origin #{phpwax}"
+      run "cd wax && git fetch"
+      run "cd wax && git checkout -b #{phpwax} origin/#{phpwax}"
     end
   
     ####### ##############
@@ -157,134 +155,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       run "rm -f tmp/log/*"
     end
   
-  
-    # =============================================================================
-    # BACKING UP APPLICATIONS
-    # =============================================================================
-  
-    desc "Starts the backup process by checking which type to perform then performs the necessary back ups."
-    task :backup do
-      config_check
-      needs_root
-      backup_check
-    end
-  
-    task :backup_check do 
-      if defined? "#{repository}"
-        if repository.include? "git"
-          git_mysql_backup
-          upload_only_backup
-        elsif repository.include? "svn"
-          standard_mysql_backup
-          upload_only_backup
-        end
-      else
-        standard_mysql_backup
-        simple_fs_backup
-      end
-    end
-  
-    task :simple_fs_backup do
-      with_user("root", "#{root_pass}") do 
-        run "mkdir -p /backup/#{application}"
-        run "rsync -avzh /home/#{application}/ /backup/#{application}/"
-      end
-    end
-  
-    task :upload_only_backup do
-      with_user("root", "#{root_pass}") do 
-        run "mkdir -p /backup/#{application}"
-        run "rsync -avzh /home/#{application}/public/files/ /backup/#{application}/"
-      end
-    end
-  
-    task :standard_mysql_backup do
-      run "mkdir -p public/files"
-      databases.each do |db|
-        run "mysqldump #{db} --skip-comments --add-drop-table -u#{user}  -p#{password} > public/files/#{db}.sql";
-      end
-      upload_only_backup
-    end
-  
-    task :git_mysql_backup do
-      transaction do
-        run "mkdir -p tmp/backup"
-        run "ln -s ../../.git/ tmp/backup/.git"
-        begin 
-          run "cd tmp/backup && git branch db"
-          run "cd tmp/backup && git branch -d db" 
-        rescue 
-        end
-        run "cd tmp/backup && git symbolic-ref HEAD refs/heads/db"
-        run "cd tmp/backup && mv .git/index .git/index_old"
-        databases.each do |db|
-          run "cd tmp/backup && mysqldump #{db} --skip-comments --add-drop-table -u#{user}  -p#{password} > #{db}.sql";
-        end
-        run "cd tmp/backup && git add ."
-        run "cd tmp/backup && git commit -m 'database update'" rescue ""
-        run "cd tmp/backup && git push origin db"
-        run "rm -Rf ./tmp/backup"
-        run "mv -f .git/index_old .git/index" rescue ""
-        run "git symbolic-ref HEAD refs/heads/#{branch}"
-        on_rollback do
-          run "rm -Rf ./tmp/backup"
-          run "mv -f .git/index_old .git/index" rescue ""
-          run "git symbolic-ref HEAD refs/heads/#{branch}"
-        end
-      end   
-    end
-  
-    # =============================================================================
-    # RESTORING BACKED-UP APPLICATIONS
-    # =============================================================================
-  
-    desc "Restores a backed up application, database and other files."
-    task :restore do
-      if defined? repository
-        if repository.include? "git"
-          upload_only_restore
-          git_mysql_restore
-        elsif repository.include? "svn"
-          upload_only_restore
-          standard_mysql_restore 
-        end
-      else
-        simple_fs_restore
-        standard_mysql_restore
-      end
-    end
-  
-    task :upload_only_restore do
-      with_user("root", "#{root_pass}") do 
-        run "rsync -avzh /backup/#{application}/ /home/#{application}/public/files/"
-      end
-    end
-  
-    task :git_mysql_restore do 
-      run "mkdir -p tmp/backup"
-      run "ln -s ../../ tmp/backup/.git"
-      run "cd tmp/backup && git symbolic-ref HEAD refs/heads/db"
-      run "cd tmp/backup && mv .git/index .git/index_old"
-      "#{databases}".each do |db|
-        run "cd tmp/backup && mysql #{db} -u#{user} -p#{password} < #{db}.sql"
-      end
-      run "rm -Rf ./tmp/backup"
-      run "mv -f .git/index_old .git/index" rescue ""
-      run "git symbolic-ref HEAD refs/heads/#{branch}"
-    end
-  
-    desc "Just runs rSync back to the home directory"
-    task :simple_fs_restore do
-      with_user("root", "#{root_pass}") do 
-        run "rsync -avzh /backup/#{application}/ /home/#{application}/"
-      end
-    end
-  
-    task :standard_mysql_restore do 
-      "#{databases}".each do |db|
-        run "cd tmp/backup && mysql #{db} -u#{user} -p#{password} < public/files/#{db}.sql"
-      end
-    end
+    
   
     # =============================================================================
     # USER AND APPLICATION SETUP AND INITIALISATION
@@ -362,21 +233,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     
     end
     
-    task :crontab_configuration do
-      # setup crontab file
-      crontab_file = render :template => <<-EOF
-      # WARNING: this file has been automatically setup by the Capistrano script
-
-      # this task will run every hour:
-      # * */1 * * *    root    ruby #{deploy_to}/current/script/runner -e production 'Class.method(example)'
-      EOF
-    
-      put crontab_file, "#{deploy_to}/crontab_setup"
-     
-      # deploy it by copying over one that exists
-      run "crontab ./crontab_setup"
-    
-    end
     
   
     # =============================================================================
@@ -427,6 +283,14 @@ Capistrano::Configuration.instance(:must_exist).load do
   def close_sessions 
     sessions.values.each { |session| session.close } 
     sessions.clear 
+  end
+  
+  
+  namespace :deploy do
+    desc "Uses the specified repository to deploy an application. Also checks for correct versions of PHPWax and plugins."
+    task :default do
+      app.deploy
+    end
   end
 
 end
