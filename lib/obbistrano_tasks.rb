@@ -203,6 +203,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :setup_mysql do
+      needs_root
       set :user_to_add, "#{user}"
       set :passwd_to_add, "#{password}"
       with_user("root", "#{root_pass}") do
