@@ -98,6 +98,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       begin
         run "ls #{deploy_to}/.git"
       rescue
+        run "mkdir -p #{deploy_to}"
         run "cd #{deploy_to} && git init"
         run "cd #{deploy_to} && git remote add origin #{repository}"
       end
@@ -183,7 +184,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     # USER AND APPLICATION SETUP AND INITIALISATION
     # =============================================================================
   
-    desc "General setup task which creates a new user on the host, sets up a mysql database and login, creates an apache vhost file and finally generates an ssh key for the user."
     task :setup do
       config_check
       try_login
@@ -261,7 +261,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     # +MIGRATING+ APPLICATIONS
     # =============================================================================
   
-    desc "Runs a backup of an application, copies to another server and then sets up on new server"
     task :copy_site do 
       config_check
       needs_root
