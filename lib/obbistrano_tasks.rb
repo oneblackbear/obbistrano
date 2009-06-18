@@ -251,12 +251,14 @@ Capistrano::Configuration.instance(:must_exist).load do
         public_ip = ""
         run "ifconfig eth0 | grep inet | awk '{print $2}' | sed 's/addr://'" do |_, _, public_ip| end
         public_ip = public_ip.strip
-        f = File.open('templates/apache_vhost.erb')
+        f = File.open(File.join(File.dirname(__FILE__), 'templates/apache_vhost.erb' ))
         contents = f.read
         f.close
         buffer = ERB.new(contents)
         config = buffer.result(binding())
-        put config, "/etc/httpd/conf.d/#{application}-apache-vhost.conf"
+        roles[:web].servers.each do |webserver|
+          put config, "/etc/httpd/conf.d/#{webserver}-apache-vhost.conf"
+        end  
       end
     
     end
