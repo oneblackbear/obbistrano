@@ -66,6 +66,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :config_check do
       config_setup
       databases rescue set(:databases, ["#{application}"])
+      aliases rescue set(:aliases, []);
     end
   
     task :needs_root do
