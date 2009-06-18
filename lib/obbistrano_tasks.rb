@@ -120,17 +120,17 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :cms_deploy do
       logger.level = -1
       begin
-        run "ls plugins/cms/.git"
+        run "ls #{deploy_to}/plugins/cms/.git"
       rescue
-        run "mkdir -p plugins/cms"
-        run "cd plugins/cms && git init"
-        run "cd plugins/cms && git remote add origin git://github.com:phpwax/wildfire.git"
+        run "mkdir -p #{deploy_to}/plugins/cms"
+        run "cd #{deploy_to}/plugins/cms && git init"
+        run "cd #{deploy_to}/plugins/cms && git remote add origin git://github.com:phpwax/wildfire.git"
       end
-      run "cd plugins/cms && git fetch"
+      run "cd #{deploy_to}/plugins/cms && git fetch"
       begin
-        run "cd plugins/cms && git checkout -b #{cms} origin/#{cms}"
+        run "cd #{deploy_to}/plugins/cms && git checkout -b #{cms} origin/#{cms}"
       rescue
-        run "cd plugins/cms && git checkout #{cms}"
+        run "cd #{deploy_to}/plugins/cms && git checkout #{cms}"
       end
       logger.level = 3
       logger.info "Wildfire CMS has been updated on branch #{cms}"
@@ -141,15 +141,15 @@ Capistrano::Configuration.instance(:must_exist).load do
       begin
         run "ls wax/.git"
       rescue
-        run "mkdir wax"
-        run "cd wax && git init"
-        run "cd wax && git remote add origin git://github.com/phpwax/phpwax.git"
+        run "mkdir #{deploy_to}/wax"
+        run "cd #{deploy_to}/wax && git init"
+        run "cd #{deploy_to}/wax && git remote add origin git://github.com/phpwax/phpwax.git"
       end
-      run "cd wax && git fetch"
+      run "cd #{deploy_to}/wax && git fetch"
       begin
-        run "cd wax && git checkout -b #{phpwax} origin/#{phpwax}"
+        run "cd #{deploy_to}/wax && git checkout -b #{phpwax} origin/#{phpwax}"
       rescue
-        run "cd wax && git checkout #{phpwax}"
+        run "cd #{deploy_to}/wax && git checkout #{phpwax}"
       end
       logger.level = 3
       logger.info "PHP Wax has been updated on branch #{phpwax}"
