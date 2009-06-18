@@ -124,7 +124,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "ls #{deploy_to}/plugins/cms/.git"
       rescue
         run "cd #{deploy_to}/plugins/cms && git init"
-        run "cd #{deploy_to}/plugins/cms && git remote add origin git://github.com:phpwax/wildfire.git"
+        run "cd #{deploy_to}/plugins/cms && git remote add origin git://github.com/phpwax/wildfire.git"
       end
       run "cd #{deploy_to}/plugins/cms && git fetch"
       begin
