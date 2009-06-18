@@ -119,10 +119,10 @@ Capistrano::Configuration.instance(:must_exist).load do
   
     task :cms_deploy do
       logger.level = -1
+      run "mkdir -p #{deploy_to}/plugins/cms"
       begin
         run "ls #{deploy_to}/plugins/cms/.git"
       rescue
-        run "mkdir -p #{deploy_to}/plugins/cms"
         run "cd #{deploy_to}/plugins/cms && git init"
         run "cd #{deploy_to}/plugins/cms && git remote add origin git://github.com:phpwax/wildfire.git"
       end
@@ -138,10 +138,10 @@ Capistrano::Configuration.instance(:must_exist).load do
   
     task :php_wax_deploy do
       logger.level = -1
+      run "mkdir -p #{deploy_to}/wax"
       begin
         run "ls wax/.git"
       rescue
-        run "mkdir -p #{deploy_to}/wax"
         run "cd #{deploy_to}/wax && git init"
         run "cd #{deploy_to}/wax && git remote add origin git://github.com/phpwax/phpwax.git"
       end
