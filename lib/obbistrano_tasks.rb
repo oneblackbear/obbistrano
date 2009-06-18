@@ -141,7 +141,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       begin
         run "ls wax/.git"
       rescue
-        run "mkdir #{deploy_to}/wax"
+        run "mkdir -p #{deploy_to}/wax"
         run "cd #{deploy_to}/wax && git init"
         run "cd #{deploy_to}/wax && git remote add origin git://github.com/phpwax/phpwax.git"
       end
