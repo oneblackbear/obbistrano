@@ -203,10 +203,16 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :setup_mysql do
+      set :user_to_add, "#{user}"
+      set :passwd_to_add, "#{password}"
       with_user("root", "#{root_pass}") do
         "#{databases}".each do |db|
-          run "mysql -uroot -p#{root_pass} -e 'CREATE DATABASE #{db}'"
-          run "musql -uroot -p#{root_pass} -e 'GRANT ALL PRIVILEGES ON `#{db}` . * TO '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';"
+          begin
+            run "mysql -uroot -p#{root_pass} -e 'CREATE DATABASE #{db}'"
+            run "musql -uroot -p#{root_pass} -e 'GRANT ALL PRIVILEGES ON `#{db}` . * TO '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';"
+          rescue
+            logger.info "Database #{db} already exists"
+          end
         end
       end
     
