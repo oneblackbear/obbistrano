@@ -137,7 +137,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :php_wax_deploy do
-      logger.level = -1
       run "mkdir -p #{deploy_to}/wax"
       begin
         run "ls wax/.git"
@@ -145,6 +144,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "cd #{deploy_to}/wax && git init"
         run "cd #{deploy_to}/wax && git remote add origin git://github.com/phpwax/phpwax.git"
       end
+      logger.level = -1
       run "cd #{deploy_to}/wax && git fetch"
       begin
         run "cd #{deploy_to}/wax && git checkout -b #{phpwax} origin/#{phpwax}"
