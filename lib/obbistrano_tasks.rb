@@ -3,6 +3,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   #### Performs the initial setup for tasks ####
   task :config_setup do
     set :root_pass, root rescue nil
+    set :environment, root rescue "production"
   end
 
  
@@ -67,6 +68,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       config_setup
       databases rescue set(:databases, ["#{application}"])
       aliases rescue set(:aliases, []);
+      
     end
   
     task :needs_root do
@@ -97,7 +99,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     task :syncdb do
-      run "cd #{deploy_to} && script/syncdb"
+      run "cd #{deploy_to} && script/syncdb #{environment}"
     end
   
     task :git_deploy do
@@ -145,7 +147,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     task :cms_syncdb do
-      run "cd #{deploy_to} && script/plugin syncdb cms"
+      run "cd #{deploy_to} && script/plugin syncdb cms #{environment}"
     end
   
     task :php_wax_deploy do
