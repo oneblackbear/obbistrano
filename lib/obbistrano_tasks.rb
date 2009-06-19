@@ -95,7 +95,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :git_deploy do
-      logger.level = -1
+      logger.level = 0
       begin
         run "ls #{deploy_to}/.git"
       rescue
@@ -118,7 +118,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :cms_deploy do
-      logger.level = -1
+      logger.level = 0
       run "mkdir -p #{deploy_to}/plugins/cms"
       begin
         run "ls #{deploy_to}/plugins/cms/.git/"
