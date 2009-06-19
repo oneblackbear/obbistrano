@@ -139,7 +139,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :php_wax_deploy do
-      logger.level = -1
+      logger.level = 0
       run "mkdir -p #{deploy_to}/wax"
       begin
         run "ls wax/.git/"
