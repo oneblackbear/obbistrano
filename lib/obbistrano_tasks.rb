@@ -84,14 +84,20 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :deploy do
       config_check
       deploy_check
+      syncdb
       php_wax_deploy if defined? "#{phpwax}"
       cms_deploy if defined? "#{cms}"
+      cms_syncdb if defined? "#{cms}"
     end
   
     task :deploy_check do 
       fetch "repository" rescue abort "You have not specified a repository for this application"
       git_deploy if repository.include? "git"
       svn_deploy if repository.include? "svn"
+    end
+    
+    task :syncdb do
+      run "cd #{deploy_to} && script/syncdb"
     end
   
     task :git_deploy do
@@ -136,6 +142,10 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
       logger.level = 3
       logger.info "Wildfire CMS has been updated on branch #{cms}"
+    end
+    
+    task :cms_syncdb do
+      run "cd #{deploy_to} && script/plugin syncdb cms"
     end
   
     task :php_wax_deploy do
