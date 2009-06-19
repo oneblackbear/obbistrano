@@ -68,7 +68,6 @@ Capistrano::Configuration.instance(:must_exist).load do
       config_setup
       databases rescue set(:databases, ["#{application}"])
       aliases rescue set(:aliases, []);
-      
     end
   
     task :needs_root do
@@ -99,7 +98,10 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     task :syncdb do
+      logger.level = -1
       run "cd #{deploy_to} && script/syncdb #{environment}"
+      logger.level=2
+      logger.info "Application database has been synchronised"
     end
   
     task :git_deploy do
@@ -117,7 +119,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       rescue
         run "cd #{deploy_to} && git checkout #{branch}"
       end
-      logger.level = 3
+      logger.level = 2
       logger.info "Application has been updated on branch #{branch}"
     end
   
@@ -142,12 +144,15 @@ Capistrano::Configuration.instance(:must_exist).load do
       rescue
         run "cd #{deploy_to}/plugins/cms && git checkout #{cms}"
       end
-      logger.level = 3
+      logger.level = 2
       logger.info "Wildfire CMS has been updated on branch #{cms}"
     end
     
     task :cms_syncdb do
+      logger.level = -1
       run "cd #{deploy_to} && script/plugin syncdb cms #{environment}"
+      logger.level = 2
+      logger.info "Wildfire CMS database has been synchronised"
     end
   
     task :php_wax_deploy do
