@@ -3,7 +3,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   #### Performs the initial setup for tasks ####
   task :config_setup do
     set :root_pass, root rescue nil
-    set :environment, environment rescue "production"
+    set :environment, environment rescue set :environment, "production"
   end
 
  
