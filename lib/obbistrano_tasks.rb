@@ -7,6 +7,8 @@ Capistrano::Configuration.instance(:must_exist).load do
   end
 
  
+  #### Slicehost Namespace.... Allows Auto Creation of DNS ####
+ 
   namespace :slicehost do
  
     desc "Sets up slicehost DNS for each of the servers specified with a role of web."
@@ -35,7 +37,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     desc "Sets up slicehost DNS for Google Apps usage on each of the servers specified with a role of web."
     task :googleapps do
-      API_PASSWORD = "#{slicehost_api_key}"
+      SLICEHOST_API_PASSWORD = "#{slicehost_api_key}"
       mx_records = <<-RECORD
       ASPMX.L.GOOGLE.COM.
       ALT1.ASPMX.L.GOOGLE.COM.
@@ -61,6 +63,21 @@ Capistrano::Configuration.instance(:must_exist).load do
  
   end
 
+
+  #### Github Namespace.... Allows Auto Creation of Repository, ssh keys and Repo permissions ####
+
+  namespace :github do
+    
+    task :setup do
+      authenticated_with "#{github_login}", "#{github_token}" do |g|
+          repo = g.repository("phpwax")
+          issue = repo.open_issue :title => "Sample issue",
+            :body => "This issue was opened using GitHub API and Octopi"
+          puts issue.number
+        end
+    end
+    
+  end
   
   namespace :app do  
   
