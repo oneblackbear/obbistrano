@@ -100,6 +100,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     # =============================================================================
   
     task :deploy do
+      logger.info "Initialising Application Deploy"
       logger.level = -1
       config_check
       deploy_check
@@ -124,7 +125,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   
     task :git_deploy do
       logger.level = 2
-      logger.info = "Deploying application from #{repository} on branch #{branch}"
+      logger.info "Deploying application from #{repository} on branch #{branch}"
       logger.level = -1
       begin
         run "ls #{deploy_to}/.git"
