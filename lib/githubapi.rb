@@ -21,6 +21,19 @@ class GithubApi
     self.class.post(uri, :query=>post_params.merge(params))
   end
   
+  def add_collaborator(user)
+    uri = "#{self.class.base_uri}/repos/collaborators/#{@repo}/add/#{user}"
+    post_params = {"login"=>@login, "token"=>@token}
+    self.class.post(uri, :query=>post_params)
+  end
+  
+  def add_key(params)
+    uri = "#{self.class.base_uri}/repos/key/#{@repo}/add"
+    post_params = {"login"=>@login, "token"=>@token}
+    params = post_params.merge(params)
+    self.class.post(uri, :query=>post_params.merge(params))
+  end
+  
   def create_issue(params)
     uri = "#{self.class.base_uri}/issues/open/#{@login}/#{@repo}"
     post_params = {"login"=>@login, "token"=>@token}
