@@ -105,6 +105,8 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :git_deploy do
+      logger.level = 2
+      logger.info = "Deploying application from #{repository} on branch #{branch}"
       logger.level = -1
       begin
         run "ls #{deploy_to}/.git"
@@ -345,6 +347,8 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :deploy do
     desc "Uses the specified repository to deploy an application. Also checks for correct versions of PHPWax and plugins."
     task :default do
+      logger.info = "Initialising application deploy...."
+      logger.level = -1
       app.deploy
     end
   end
