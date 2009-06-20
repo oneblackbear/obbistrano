@@ -1,3 +1,3 @@
 require "slicehost"
-include "Octopi"
+include Octopi
 require "obbistrano_tasks"
