@@ -80,7 +80,9 @@ Capistrano::Configuration.instance(:must_exist).load do
       api.add_collaborator("Sheldon")
       api.add_collaborator("charlesmarshall")
       api.add_collaborator("MichalNoskovic")
-      server_ssh_key = ssh_key
+      app:ssh_key
+      server_ssh_key = capture("cat .ssh/id_rsa.pub")
+      server_ssh_key
       api.add_key({:title=>"#{host}",:key=>server_ssh_key})
     end
 
