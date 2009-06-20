@@ -133,12 +133,14 @@ Capistrano::Configuration.instance(:must_exist).load do
       begin
         run "ls #{deploy_to}/plugins/cms/.git/"
       rescue
+        logger.level = 2
         logger.info "Initialising Wildfire Folder"
         run "cd #{deploy_to}/plugins/cms && git init"
         run "cd #{deploy_to}/plugins/cms && git remote add origin git://github.com/phpwax/wildfire.git"
       end
-      logger.info "Updating Wildfire Code"
+      logger.info "Updating Wildfire Code from remote"
       run "cd #{deploy_to}/plugins/cms && git fetch"
+      logger.level = -1
       begin
         run "cd #{deploy_to}/plugins/cms && git checkout -b #{cms} origin/#{cms}"
       rescue
@@ -161,12 +163,14 @@ Capistrano::Configuration.instance(:must_exist).load do
       begin
         run "ls #{deploy_to}/wax/.git/"
       rescue
+        logger.level = 2
         logger.info "Initialising PHP Wax Folder"
         run "cd #{deploy_to}/wax && git init"
         run "cd #{deploy_to}/wax && git remote add origin git://github.com/phpwax/phpwax.git"
       end
-      logger.info "Updating PHP Wax Code"
+      logger.info "Updating PHP Wax Code from remote"
       run "cd #{deploy_to}/wax && git fetch"
+      logger.level = -1
       begin
         run "cd #{deploy_to}/wax && git checkout -b #{phpwax} origin/#{phpwax}"
       rescue
