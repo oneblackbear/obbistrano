@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{obbistrano}
-  s.version = "1.0.49"
+  s.version = "1.0.50"
   s.authors = ["Ross Riley", "One Black Bear"]
   s.date = Time.now
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
@@ -20,15 +20,15 @@ Gem::Specification.new do |s|
       if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
         s.add_runtime_dependency(%q<capistrano>, [">= 2.5"])
         s.add_runtime_dependency(%q<activeresource>, [">= 2"])
-        s.add_runtime_dependency(%q<octopi>, [">= 0.8"])
+        s.add_runtime_dependency(%q<octopi>, [">= 0.0.9"])
       else
         s.add_dependency(%q<capistrano>, [">= 2.5"])
         s.add_dependency(%q<activeresource>, [">= 2"])
-        s.add_dependency(%q<octopi>, [">= 0.8"])
+        s.add_dependency(%q<octopi>, [">= 0.0.9"])
       end
     else
       s.add_dependency(%q<capistrano>, [">= 2.5"])
       s.add_dependency(%q<activeresource>, [">= 2"])
-      s.add_dependency(%q<octopi>, [">= 0.8"])
+      s.add_dependency(%q<octopi>, [">= 0.0.9"])
     end
 end
