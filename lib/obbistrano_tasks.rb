@@ -67,16 +67,17 @@ Capistrano::Configuration.instance(:must_exist).load do
   #### Github Namespace.... Allows Auto Creation of Repository, ssh keys and Repo permissions ####
 
   namespace :github do
-    
     task :setup do
-      authenticated_with "#{github_login}", "#{github_token}" do |g|
-          repo = g.repository("phpwax")
-          issue = repo.open_issue :title => "Sample issue",
-            :body => "This issue was opened using GitHub API and Octopi"
-          puts issue.number
-        end
+      puts "*** You need to specify a github login and token to run this operation" if !defined? "#{github_login}" || !defined? "#{github_token}"
+      exit if !defined? "#{github_login}" || !defined? "#{github_token}"
+      api = GithubApi.new("#{github_login}", "#{github_token}")
+      params = {
+        :name =>"#{application}",
+        :body  =>"Project for #{application}"
+      }
+      api.create_repo(params)
     end
-    
+
   end
   
   namespace :app do  

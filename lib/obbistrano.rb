@@ -1,3 +1,4 @@
 require "slicehost"
-require "octopi"
+require "httparty"
+require "github"
 require "obbistrano_tasks"
