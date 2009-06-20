@@ -191,7 +191,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     # GENERAL ADMIN FOR APPLICATIONS
     # =============================================================================
     
-    desc "Restarts the Apache Server."
+    desc "Restarts the Apache Server. Requires root password to access."
     task :restart do
       config_check
       needs_root
@@ -200,12 +200,14 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
     end
   
+    desc "Clears the application's cache files from tmp/cache."
     task :clearcache do
-      run "rm -f tmp/cache/*"
+      run "cd #{deploy_to} && rm -f tmp/cache/*"
     end
   
+    desc "Clears the application's log files from tmp/log."
     task :clearlogs do
-      run "rm -f tmp/log/*"
+      run "cd #{deploy_to} && rm -f tmp/log/*"
     end
   
     
@@ -291,7 +293,7 @@ Capistrano::Configuration.instance(:must_exist).load do
           put config, "/etc/httpd/conf.d/#{webserver}-apache-vhost.conf"
         end  
       end
-    
+      restart
     end
     
     
