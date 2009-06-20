@@ -83,6 +83,8 @@ Capistrano::Configuration.instance(:must_exist).load do
     # =============================================================================
   
     task :deploy do
+      logger.info = "Initialising application deploy...."
+      logger.level = -1
       config_check
       deploy_check
       syncdb
@@ -347,8 +349,6 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :deploy do
     desc "Uses the specified repository to deploy an application. Also checks for correct versions of PHPWax and plugins."
     task :default do
-      logger.info = "Initialising application deploy...."
-      logger.level = -1
       app.deploy
     end
   end
