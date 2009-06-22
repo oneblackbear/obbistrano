@@ -73,7 +73,8 @@ Capistrano::Configuration.instance(:must_exist).load do
       api = GithubApi.new("#{github_login}", "#{github_token}")
       params = {
         :name =>"#{application}",
-        :body  =>"Project for #{application}"
+        :body  =>"Project for #{application}",
+        :public =>0
       }
       api.create_repo(params)
       api.add_collaborator("rossriley")
