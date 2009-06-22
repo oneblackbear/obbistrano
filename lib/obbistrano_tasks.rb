@@ -77,6 +77,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         :public =>0
       }
       api.create_repo(params)
+      api.repo = "#{application}"
       api.add_collaborator("rossriley")
       api.add_collaborator("Sheldon")
       api.add_collaborator("charlesmarshall")
