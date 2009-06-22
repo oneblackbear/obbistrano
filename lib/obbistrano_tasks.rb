@@ -295,6 +295,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       begin
         run "cat .ssh/id_rsa.pub"
       rescue
+        run "mkdir -p .ssh/"
         run "ssh-keygen -t rsa -f .ssh/id_rsa -N ''"
         run "cat .ssh/id_rsa.pub"
       end
