@@ -141,6 +141,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "cd #{deploy_to} && git init"
         run "cd #{deploy_to} && git remote add origin #{repository}"
       end
+      logger.level = 2
       run "cd #{deploy_to} && git fetch"
       begin
         run "cd #{deploy_to} && git checkout -b #{branch} origin/#{branch}"
