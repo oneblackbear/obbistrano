@@ -113,10 +113,8 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :deploy do
       config_check
       deploy_check
-      syncdb
       php_wax_deploy if defined? "#{phpwax}"
       cms_deploy if defined? "#{cms}"
-      cms_syncdb if defined? "#{cms}"
     end
   
     task :deploy_check do 

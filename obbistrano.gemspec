@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{obbistrano}
-  s.version = "1.0.68"
+  s.version = "1.0.69"
   s.authors = ["Ross Riley", "One Black Bear"]
   s.date = Time.now
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
