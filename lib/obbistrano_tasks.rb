@@ -146,9 +146,11 @@ Capistrano::Configuration.instance(:must_exist).load do
       begin
         run "cd #{deploy_to} && git checkout -b #{branch} origin/#{branch}"
       rescue
+        run "cd #{deploy_to} && git pull origin #{branch}"
         run "cd #{deploy_to} && git checkout #{branch}"
+        run "cd #{deploy_to} && git checkout #{commit}" if "#{commit}"
       end
-      logger.level = 2
+      
       logger.info "Application has been updated on branch #{branch}"
     end
   
