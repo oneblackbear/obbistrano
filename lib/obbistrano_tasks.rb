@@ -177,6 +177,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       rescue
         run "cd #{deploy_to}/plugins/cms && git checkout #{cms}"
       end
+      run "cd #{deploy_to}/plugins/cms && git pull origin #{cms}"
       logger.level = 2
       logger.info "Wildfire CMS has been updated on branch #{cms}"
     end
@@ -207,6 +208,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       rescue
         run "cd #{deploy_to}/wax && git checkout #{phpwax}"
       end
+      run "cd #{deploy_to}/wax && git pull origin #{phpwax}"
       logger.level = 3
       logger.info "PHP Wax has been updated on branch #{phpwax}"
     end
