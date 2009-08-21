@@ -87,6 +87,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       server_ssh_key
       api.add_key({:title=>"#{host}",:key=>server_ssh_key})
     end
+    
 
   end
   
@@ -115,6 +116,8 @@ Capistrano::Configuration.instance(:must_exist).load do
       deploy_check
       php_wax_deploy if defined? "#{phpwax}"
       cms_deploy if defined? "#{cms}"
+      css_build
+      js_build
     end
   
     task :deploy_check do 
@@ -182,12 +185,6 @@ Capistrano::Configuration.instance(:must_exist).load do
       logger.info "Wildfire CMS has been updated on branch #{cms}"
     end
     
-    task :cms_syncdb do
-      logger.level = -1
-      run "cd #{deploy_to} && script/plugin syncdb cms #{environment}"
-      logger.level = 2
-      logger.info "Wildfire CMS database has been synchronised"
-    end
   
     task :php_wax_deploy do
       logger.level = -1
@@ -213,6 +210,20 @@ Capistrano::Configuration.instance(:must_exist).load do
       logger.info "PHP Wax has been updated on branch #{phpwax}"
     end
   
+  
+    task :css_build
+      run "cd #{deploy_to} && rm -f public/stylesheets/build.css"
+      Dir.glob("**/*.css").each do |f|  
+        run "cd #{deploy_to} && cat #{f} >> public/stylesheets/build.css" 
+      end
+    end
+    
+    task :js_build
+      run "cd #{deploy_to} && rm -f public/javascripts/build.js"
+      Dir.glob("**/*.js").each do |f|  
+        run "cd #{deploy_to} && cat #{f} >> public/javascripts/build.js" 
+      end
+    end
     ####### ##############
   
   
