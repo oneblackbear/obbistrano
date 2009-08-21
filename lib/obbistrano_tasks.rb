@@ -211,17 +211,19 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
   
-    task :css_build
+    task :css_build do
+      set :css_files, Dir.glob("**/*.css") if !defined? "#{css_files}"
       run "cd #{deploy_to} && rm -f public/stylesheets/build.css"
-      Dir.glob("**/*.css").each do |f|  
-        run "cd #{deploy_to} && cat #{f} >> public/stylesheets/build.css" 
+      css_files.each do |f|  
+        run "cd #{deploy_to} && cat #{f} >> #{deploy_to}/public/stylesheets/build.css" 
       end
     end
-    
-    task :js_build
+
+    task :js_build do
+      set :js_files, Dir.glob("**/*.js") if !defined? "#{js_files}"
       run "cd #{deploy_to} && rm -f public/javascripts/build.js"
-      Dir.glob("**/*.js").each do |f|  
-        run "cd #{deploy_to} && cat #{f} >> public/javascripts/build.js" 
+      js_files.each do |f|  
+        run "cd #{deploy_to} && cat #{f} >> #{deploy_to}/public/javascripts/build.js" 
       end
     end
     ####### ##############
