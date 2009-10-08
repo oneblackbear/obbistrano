@@ -273,6 +273,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       set :passwd_to_add, "#{password}"
       with_user("root", "#{root_pass}") do 
         run "useradd -p `openssl passwd #{passwd_to_add}` #{user_to_add}"
+        run "chmod -R 0755 /home/#{user_to_add}"
       end
     end
   
