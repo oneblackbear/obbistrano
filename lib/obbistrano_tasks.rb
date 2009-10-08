@@ -71,11 +71,11 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :init do
       puts "*** You need to specify a github login and token to run this operation" if !defined? "#{github_login}" || !defined? "#{github_token}"
       exit if !defined? "#{github_login}" || !defined? "#{github_token}"
-      api = GithubApi.new("#{github_login}", "#{github_token}")
     end
     
     task :setup do
-      github:init
+      init
+      api = GithubApi.new("#{github_login}", "#{github_token}")
       params = {
         :name =>"#{application}",
         :body  =>"Project for #{application}",
@@ -91,7 +91,8 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     task :key do
-      github:init
+      init
+      api = GithubApi.new("#{github_login}", "#{github_token}")
       app:ssh_key
       server_ssh_key = capture("cat .ssh/id_rsa.pub")
       server_ssh_key
