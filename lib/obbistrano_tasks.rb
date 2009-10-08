@@ -67,10 +67,15 @@ Capistrano::Configuration.instance(:must_exist).load do
   #### Github Namespace.... Allows Auto Creation of Repository, ssh keys and Repo permissions ####
 
   namespace :github do
-    task :setup do
+    
+    task :init do
       puts "*** You need to specify a github login and token to run this operation" if !defined? "#{github_login}" || !defined? "#{github_token}"
       exit if !defined? "#{github_login}" || !defined? "#{github_token}"
       api = GithubApi.new("#{github_login}", "#{github_token}")
+    end
+    
+    task :setup do
+      github:init
       params = {
         :name =>"#{application}",
         :body  =>"Project for #{application}",
@@ -82,6 +87,10 @@ Capistrano::Configuration.instance(:must_exist).load do
       api.add_collaborator("Sheldon")
       api.add_collaborator("charlesmarshall")
       api.add_collaborator("MichalNoskovic")
+      github:key
+    end
+    
+    task :key do
       app:ssh_key
       server_ssh_key = capture("cat .ssh/id_rsa.pub")
       server_ssh_key
