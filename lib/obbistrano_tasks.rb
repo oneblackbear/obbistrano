@@ -91,6 +91,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     task :key do
+      github:init
       app:ssh_key
       server_ssh_key = capture("cat .ssh/id_rsa.pub")
       server_ssh_key
