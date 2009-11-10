@@ -380,10 +380,10 @@ Capistrano::Configuration.instance(:must_exist).load do
       with_user("root", "#{root_pass}") do
         begin 
           run "cat /etc/fedora-release"
-          server_type="fedora"
+          set :server_type, "fedora"
         rescue 
           run "cat /etc/debian_version"
-          server_type="ubuntu"
+          set :server_type, "ubuntu"
         end
       end
       logger.level = 2
