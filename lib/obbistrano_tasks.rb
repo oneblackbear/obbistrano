@@ -1,5 +1,5 @@
 Capistrano::Configuration.instance(:must_exist).load do
-
+  
   #### Performs the initial setup for tasks ####
   task :config_setup do
     set :root_pass, root rescue nil
@@ -103,20 +103,6 @@ Capistrano::Configuration.instance(:must_exist).load do
   end
   
   namespace :app do  
-  
-    task :config_check do
-      config_setup
-      databases rescue set(:databases, ["#{application}"])
-      aliases rescue set(:aliases, []);
-    end
-  
-    task :needs_root do
-      config_check
-      puts "*** This operation needs root access - Please pass in a root password using -s root=password" if !defined? "#{root_pass}"
-      exit if !defined? "#{root_pass}"
-    end
-  
-  
 
     # =============================================================================
     # DEPLOYING APPLICATIONS
@@ -135,13 +121,6 @@ Capistrano::Configuration.instance(:must_exist).load do
       fetch "repository" rescue abort "You have not specified a repository for this application"
       git_deploy if repository.include? "git"
       svn_deploy if repository.include? "svn"
-    end
-    
-    task :syncdb do
-      logger.level = -1
-      run "cd #{deploy_to} && script/syncdb #{environment}"
-      logger.level=2
-      logger.info "Application database has been synchronised"
     end
   
     task :git_deploy do
@@ -243,15 +222,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     # =============================================================================
     # GENERAL ADMIN FOR APPLICATIONS
     # =============================================================================
-    
-    desc "Restarts the Apache Server. Requires root password to access."
-    task :restart do
-      config_check
-      needs_root
-      with_user("root", "#{root_pass}") do 
-        run "/etc/rc.d/init.d/httpd restart"
-      end
-    end
   
     desc "Clears the application's cache files from tmp/cache."
     task :clearcache do
@@ -262,122 +232,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :clearlogs do
       run "cd #{deploy_to} && rm -f tmp/log/*"
     end
-  
     
-  
-    # =============================================================================
-    # USER AND APPLICATION SETUP AND INITIALISATION
-    # =============================================================================
-  
-    task :setup do
-      config_check
-      try_login
-      setup_mysql
-      vhost
-      ssh_key
-    end
-  
-    
-    task :setup_user do
-      needs_root
-      set :user_to_add, "#{user}"
-      set :passwd_to_add, "#{password}"
-      with_user("root", "#{root_pass}") do 
-        run "useradd -p `openssl passwd #{passwd_to_add}` #{user_to_add}"
-        run "chmod -R 0755 /home/#{user_to_add}"
-      end
-    end
-  
-    task :setup_mysql do
-      needs_root
-      set :user_to_add, "#{user}"
-      set :passwd_to_add, "#{password}"
-      with_user("root", "#{root_pass}") do
-        "#{databases}".each do |db|
-          begin
-            run "mysql -uroot -p#{root_pass} -e \"CREATE USER '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
-            run "mysql -uroot -p#{root_pass} -e 'CREATE DATABASE #{db}'"
-            run "musql -uroot -p#{root_pass} -e \"GRANT ALL PRIVILEGES ON `#{db}` . * TO '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
-          rescue
-            logger.info "Database #{db} already exists"
-          end
-        end
-      end
-    
-    end
-  
-    task :try_login do
-      config_check
-      begin
-        run "ls"
-        puts "Logged in ok"
-      rescue
-        print "==== The user does not yet exist. Would you like to create? [Y/N]"
-        line = STDIN.gets.upcase.strip
-        puts "*** Could not continue as the login does not exist" if line !="Y"
-        exit if line != "Y"
-        setup_user
-      end
-    end
-  
-    desc "Creates or gets an ssh key for the application"
-    task :ssh_key do 
-      config_check
-      begin
-        run "cat .ssh/id_rsa.pub"
-      rescue
-        run "mkdir -p .ssh/"
-        run "ssh-keygen -t rsa -f .ssh/id_rsa -N ''"
-        run "cat .ssh/id_rsa.pub"
-      end
-    end
-  
-    desc "Creates an Apache virtual host file"
-    task :vhost do
-      config_check
-      needs_root
-      with_user("root", "#{root_pass}") do 
-        public_ip = ""
-        run "ifconfig eth0 | grep inet | awk '{print $2}' | sed 's/addr://'" do |_, _, public_ip| end
-        public_ip = public_ip.strip
-        roles[:web].servers.each do |webserver|
-          f = File.open(File.join(File.dirname(__FILE__), 'templates/apache_vhost.erb' ))
-          contents = f.read
-          f.close
-          buffer = ERB.new(contents)
-          config = buffer.result(binding())
-          put config, "/etc/httpd/conf.d/#{webserver}-apache-vhost.conf"
-        end  
-      end
-      restart
-    end
-    
-    
-  
-    # =============================================================================
-    # +MIGRATING+ APPLICATIONS
-    # =============================================================================
-  
-    task :copy_site do 
-      config_check
-      needs_root
-      backup
-      print "==== Which server would you like to copy #{application} to? [Full Domain Name] "
-      line = STDIN.gets.strip
-      begin      
-        new_server = options["servers"][line]["domain"] 
-      rescue 
-        puts "*** Can't find that new server in the config"
-        exit
-      end
-      with_user("root", "#{root_pass}") do
-        run "rsync -avzh . -e ssh root@#{new_server}:/backup/#{application}/ --exclude 'tmp/*' --exclude '.git/*'"
-      end
-      options["apps"]["#{application}"]["server"] = line
-      config_write
-      try_login
-      restore
-    end
   
   end
 
@@ -415,9 +270,214 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :setup do
     desc "Sets up the server with a user, home directory and mysql login."
     task :default do
-      app.setup
+      host.setup
     end
   end
+  
+  namespace :host do        
+    
+    
+    desc "Sets up the server with a user, home directory and mysql login."
+    task :setup do
+      try_login
+      vhost
+      setup_mysql
+    end
+
+    desc "Restarts the web server."
+    task :restart do
+      s_namespace = eval(server_type)
+      s_namespace.restart
+    end
+    
+    desc "Creates a new Apache VHost."
+    task :vhost do
+      config_check
+      needs_root
+      s_namespace = eval(server_type)
+      s_namespace.vhost
+      s_namespace.restart
+    end
+    
+    desc "Sets up a new user."
+    task :setup_user do
+      config_check
+      needs_root
+      s_namespace = eval(server_type)
+      s_namespace.setup_user
+    end
+    
+    desc "Creates or gets an ssh key for the application"
+    task :ssh_key do 
+      config_check
+      begin
+        run "cat .ssh/id_rsa.pub"
+      rescue
+        run "mkdir -p .ssh/"
+        run "ssh-keygen -t rsa -f .ssh/id_rsa -N ''"
+        run "cat .ssh/id_rsa.pub"
+      end
+    end
+    
+    desc "Creates a MySQL user and database"
+    task :setup_mysql do
+      config_check
+      needs_root
+      set :user_to_add, "#{user}"
+      set :passwd_to_add, "#{password}"
+      with_user("root", "#{root_pass}") do
+        "#{databases}".each do |db|
+          begin
+            run "mysql -uroot -p#{root_pass} -e \"CREATE USER '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
+            run "mysql -uroot -p#{root_pass} -e 'CREATE DATABASE #{db}'"
+            run "musql -uroot -p#{root_pass} -e \"GRANT ALL PRIVILEGES ON `#{db}` . * TO '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
+          rescue
+            logger.info "Database #{db} already exists"
+          end
+        end
+      end
+    end
+    
+    
+    # =============================================================================
+    # +MIGRATING+ APPLICATIONS
+    # =============================================================================
+    
+    
+    
+    
+    ###### Private tasks for server operations #############
+    
+    task :config_check do
+      config_setup
+      databases rescue set(:databases, ["#{application}"])
+      aliases rescue set(:aliases, []);
+      detect_os
+    end
+  
+    task :needs_root do
+      config_check
+      puts "*** This operation needs root access - Please pass in a root password using -s root=password" if !defined? "#{root_pass}"
+      exit if !defined? "#{root_pass}"
+    end
+    
+    task :try_login do
+      config_check
+      begin
+        run "ls"
+        puts "Logged in ok"
+      rescue
+        print "==== The user does not yet exist. Would you like to create? [Y/N]"
+        line = STDIN.gets.upcase.strip
+        puts "*** Could not continue as the login does not exist" if line !="Y"
+        exit if line != "Y"
+        setup_user
+      end
+    end
+  
+    task :detect_os do
+      logger.level = -1
+      with_user("root", "#{root_pass}") do
+        begin 
+          run "cat /etc/fedora-release"
+          server_type="fedora"
+        rescue 
+          run "cat /etc/debian_version"
+          server_type="ubuntu"
+        end
+      end
+      logger.level = 2
+    end
+    
+  end
+  
+  namespace :ubuntu do
+    
+    task :setup_user do
+      set :user_to_add, "#{user}"
+      set :passwd_to_add, "#{password}"
+      with_user("root", "#{root_pass}") do 
+        run "useradd -d /home/#{user_to_add} -p `openssl passwd #{passwd_to_add}` -m #{user_to_add}"
+        run "chmod -R 0755 /home/#{user_to_add}"
+      end
+    end
+     
+    task :vhost do
+      with_user("root", "#{root_pass}") do 
+        public_ip = ""
+        run "ifconfig eth0 | grep inet | awk '{print $2}' | sed 's/addr://'" do |_, _, public_ip| end
+        public_ip = public_ip.strip
+        roles[:web].servers.each do |webserver|
+          f = File.open(File.join(File.dirname(__FILE__), 'templates/apache_vhost.erb' ))
+          contents = f.read
+          f.close
+          buffer = ERB.new(contents)
+          config = buffer.result(binding())
+          put config, "/etc/apache2/sites-enabled/#{webserver}-apache-vhost.conf"
+        end  
+      end
+    end
+    
+    task :restart do
+      with_user("root", "#{root_pass}") do 
+        run "/etc/init.d/apache2 restart"
+      end
+    end
+    
+  end
+  
+  namespace :fedora do
+
+    task :setup_user do
+      set :user_to_add, "#{user}"
+      set :passwd_to_add, "#{password}"
+      with_user("root", "#{root_pass}") do 
+        run "useradd -p `openssl passwd #{passwd_to_add}` #{user_to_add}"
+        run "chmod -R 0755 /home/#{user_to_add}"
+      end
+    end
+  
+    task :vhost do
+      with_user("root", "#{root_pass}") do 
+        public_ip = ""
+        run "ifconfig eth0 | grep inet | awk '{print $2}' | sed 's/addr://'" do |_, _, public_ip| end
+        public_ip = public_ip.strip
+        roles[:web].servers.each do |webserver|
+          f = File.open(File.join(File.dirname(__FILE__), 'templates/apache_vhost.erb' ))
+          contents = f.read
+          f.close
+          buffer = ERB.new(contents)
+          config = buffer.result(binding())
+          put config, "/etc/httpd/conf.d/#{webserver}-apache-vhost.conf"
+        end  
+      end
+    end
+
+    task :restart do
+      with_user("root", "#{root_pass}") do 
+        run "/etc/rc.d/init.d/httpd restart"
+      end
+    end
+
+  end
+  
+  task :mirror do 
+    print "==== Which server would you like to copy #{application} to? [Full Domain Name] "
+    new_server = STDIN.gets.strip
+    old_roles = roles[:web]
+    roles[:web].clear
+    role :web, new_server
+    host.setup
+    roles[:web].clear
+    roles[:web] = old_roles
+    puts roles[:web]
+    run "ls"
+    run "rsync -avz -e ssh ./ #{user}@#{new_server}:/home/#{user}/ --exclude 'tmp/*'"
+    "#{databases}".each do |db|
+      run "mysqldump #{db} | ssh #{user}@#{new_server} mysql #{db}"
+    end
+  
+  end  
 
 end
 
