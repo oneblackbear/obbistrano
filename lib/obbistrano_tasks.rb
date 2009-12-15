@@ -113,8 +113,8 @@ Capistrano::Configuration.instance(:must_exist).load do
       deploy_check
       php_wax_deploy if defined? "#{phpwax}"
       cms_deploy if defined? "#{cms}"
-      css_build
-      js_build
+      bundle.css
+      bundle.js
     end
   
     task :deploy_check do 
@@ -464,5 +464,65 @@ Capistrano::Configuration.instance(:must_exist).load do
 end
 
 
+namespace :bundle do 
+  
+  task :css do
+    paths = get_top_level_directories("#{deploy_to}/public/stylesheets")
+    paths << "#{deploy_to}/public/stylesheets/"
+    Dir.mkdir("#{deploy_to}/public/stylesheets/build") rescue ""
+    paths.each do |bundle_directory|
+      bundle_name = bundle_directory.gsub("#{deploy_to}/public/stylesheets/", "")
+       bundle_name ="common" if bundle_name.empty?
+      files = recursive_file_list(bundle_directory, ".css")
+      next if files.empty? || bundle_name == 'dev'
+      bundle = ''
+      files.each do |file_path|
+        bundle << File.read(file_path) << "\n"
+      end
+      target = "#{deploy_to}/public/stylesheets/build/#{bundle_name}_combined.css"
+      File.open(target, 'w') { |f| f.write(bundle) }
+    end
+  end
+  
+  task :js do
+    paths = get_top_level_directories("#{deploy_to}/public/javascripts")
+    paths << "#{deploy_to}/public/javascripts/"
+    Dir.mkdir("#{deploy_to}/public/javascripts/build") rescue ""
+    paths.each do |bundle_directory|
+      bundle_name = bundle_directory.gsub("#{deploy_to}/public/javascripts/", "")
+       bundle_name ="common" if bundle_name.empty?
+      files = recursive_file_list(bundle_directory, ".js")
+      next if files.empty? || bundle_name == 'dev'
+      bundle = ''
+      files.each do |file_path|
+        bundle << File.read(file_path) << "\n"
+      end
+      target = "#{deploy_to}/public/javascripts/build/#{bundle_name}_combined.css"
+      File.open(target, 'w') { |f| f.write(bundle) }
+    end
+  end
+  
+  require 'find'
+  def recursive_file_list(basedir, ext)
+    files = []
+    Find.find(basedir) do |path|
+      if FileTest.directory?(path)
+        if File.basename(path)[0] == ?. # Skip dot directories
+          Find.prune
+        else
+          next
+        end
+      end
+      files << path if File.extname(path) == ext
+    end
+    files.sort
+  end
 
-
+  def get_top_level_directories(base_path)
+    Dir.entries(base_path).collect do |path|
+      path = "#{base_path}/#{path}"
+      File.basename(path)[0] == ?. || !File.directory?(path) || File.basename(path)=="build" ? nil : path # not dot directories or files
+    end - [nil]
+  end
+  
+end
