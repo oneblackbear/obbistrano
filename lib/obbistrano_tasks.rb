@@ -109,7 +109,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     # =============================================================================
   
     task :deploy do
-      config_check
+      host.config_check
       deploy_check
       php_wax_deploy if defined? "#{phpwax}"
       cms_deploy if defined? "#{cms}"
@@ -286,25 +286,22 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     desc "Restarts the web server."
     task :restart do
-      s_namespace = eval(server_type)
-      s_namespace.restart
+      fedora.restart
     end
     
     desc "Creates a new Apache VHost."
     task :vhost do
       config_check
       needs_root
-      s_namespace = eval(server_type)
-      s_namespace.vhost
-      s_namespace.restart
+      fedora.vhost
+      fedora.restart
     end
     
     desc "Sets up a new user."
     task :setup_user do
       config_check
       needs_root
-      s_namespace = eval(server_type)
-      s_namespace.setup_user
+      fedora.setup_user
     end
     
     desc "Creates or gets an ssh key for the application"
@@ -352,7 +349,6 @@ Capistrano::Configuration.instance(:must_exist).load do
       config_setup
       databases rescue set(:databases, ["#{application}"])
       aliases rescue set(:aliases, []);
-      detect_os
     end
   
     task :needs_root do
@@ -373,20 +369,6 @@ Capistrano::Configuration.instance(:must_exist).load do
         exit if line != "Y"
         setup_user
       end
-    end
-  
-    task :detect_os do
-      logger.level = -1
-      with_user("root", "#{root_pass}") do
-        begin 
-          run "cat /etc/fedora-release"
-          set :server_type, "fedora"
-        rescue 
-          run "cat /etc/debian_version"
-          set :server_type, "ubuntu"
-        end
-      end
-      logger.level = 2
     end
     
   end
@@ -455,7 +437,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     task :restart do
       with_user("root", "#{root_pass}") do 
-        run "/etc/rc.d/init.d/httpd restart"
+        run "/etc/init.d/httpd restart"
       end
     end
 
