@@ -482,6 +482,7 @@ namespace :bundle do
       target = "#{deploy_to}/public/stylesheets/build/#{bundle_name}_combined.css"
       File.open(target, 'w') { |f| f.write(bundle) }
     end
+    upload "#{deploy_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/build"
   end
   
   task :js do
@@ -500,6 +501,8 @@ namespace :bundle do
       target = "#{deploy_to}/public/javascripts/build/#{bundle_name}_combined.css"
       File.open(target, 'w') { |f| f.write(bundle) }
     end
+    upload "#{deploy_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/build"
+    
   end
   
   require 'find'
