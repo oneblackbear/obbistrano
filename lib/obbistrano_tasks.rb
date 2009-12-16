@@ -108,7 +108,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     # DEPLOYING APPLICATIONS
     # =============================================================================
   
-    task :deploy do
+    task :deploy, :roles =>[:web] do
       host.config_check
       deploy_check
       php_wax_deploy if defined? "#{phpwax}"
@@ -117,13 +117,13 @@ Capistrano::Configuration.instance(:must_exist).load do
       bundle.js
     end
   
-    task :deploy_check do 
+    task :deploy_check, :roles =>[:web] do 
       fetch "repository" rescue abort "You have not specified a repository for this application"
       git_deploy if repository.include? "git"
       svn_deploy if repository.include? "svn"
     end
   
-    task :git_deploy do
+    task :git_deploy, :roles =>[:web] do
       logger.level = 2
       logger.info "Deploying application from #{repository} on branch #{branch}"
       logger.level = -1
@@ -147,11 +147,11 @@ Capistrano::Configuration.instance(:must_exist).load do
       logger.info "Application has been updated on branch #{branch}"
     end
   
-    task :svn_deploy do
+    task :svn_deploy, :roles =>[:web] do
       run "svn export #{repository} #{deploy_to} --force"
     end
   
-    task :cms_deploy do
+    task :cms_deploy, :roles =>[:web] do
       logger.level = -1
       run "mkdir -p #{deploy_to}/plugins/cms"
       begin
@@ -176,7 +176,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
   
-    task :php_wax_deploy do
+    task :php_wax_deploy, :roles =>[:web] do
       logger.level = -1
       run "mkdir -p #{deploy_to}/wax"
       begin
@@ -201,35 +201,17 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
   
-    task :css_build do
-      set :css_files, Dir.glob("**/*.css") if !defined? "#{css_files}"
-      run "cd #{deploy_to} && rm -f public/stylesheets/build.css"
-      css_files.each do |f|  
-        run "cd #{deploy_to} && cat #{f} >> #{deploy_to}/public/stylesheets/build.css" 
-      end
-    end
-
-    task :js_build do
-      set :js_files, Dir.glob("**/*.js") if !defined? "#{js_files}"
-      run "cd #{deploy_to} && rm -f public/javascripts/build.js"
-      js_files.each do |f|  
-        run "cd #{deploy_to} && cat #{f} >> #{deploy_to}/public/javascripts/build.js" 
-      end
-    end
-    ####### ##############
-  
-  
     # =============================================================================
     # GENERAL ADMIN FOR APPLICATIONS
     # =============================================================================
   
     desc "Clears the application's cache files from tmp/cache."
-    task :clearcache do
+    task :clearcache, :roles =>[:web] do
       run "cd #{deploy_to} && rm -f tmp/cache/*"
     end
   
     desc "Clears the application's log files from tmp/log."
-    task :clearlogs do
+    task :clearlogs, :roles =>[:web] do
       run "cd #{deploy_to} && rm -f tmp/log/*"
     end
     
@@ -261,7 +243,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   
   namespace :deploy do
     desc "Uses the specified repository to deploy an application. Also checks for correct versions of PHPWax and plugins."
-    task :default do
+    task :default, :roles => [:web]  do
       logger.level=-1
       app.deploy
     end
@@ -278,19 +260,19 @@ Capistrano::Configuration.instance(:must_exist).load do
     
     
     desc "Sets up the server with a user, home directory and mysql login."
-    task :setup do
+    task :setup, :roles => [:host] do
       try_login
       vhost
       setup_mysql
     end
 
     desc "Restarts the web server."
-    task :restart do
+    task :restart, :roles => [:host] do
       fedora.restart
     end
     
     desc "Creates a new Apache VHost."
-    task :vhost do
+    task :vhost, :roles => [:host] do
       config_check
       needs_root
       fedora.vhost
@@ -298,14 +280,14 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     desc "Sets up a new user."
-    task :setup_user do
+    task :setup_user, :roles => [:host] do
       config_check
       needs_root
       fedora.setup_user
     end
     
     desc "Creates or gets an ssh key for the application"
-    task :ssh_key do 
+    task :ssh_key, :roles =>[:host] do 
       config_check
       begin
         run "cat .ssh/id_rsa.pub"
@@ -317,7 +299,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     
     desc "Creates a MySQL user and database"
-    task :setup_mysql do
+    task :setup_mysql, :roles =>[:host] do
       config_check
       needs_root
       set :user_to_add, "#{user}"
@@ -327,7 +309,7 @@ Capistrano::Configuration.instance(:must_exist).load do
           begin
             run "mysql -uroot -p#{root_pass} -e \"CREATE USER '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
             run "mysql -uroot -p#{root_pass} -e 'CREATE DATABASE #{db}'"
-            run "musql -uroot -p#{root_pass} -e \"GRANT ALL PRIVILEGES ON `#{db}` . * TO '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
+            run "mysql -uroot -p#{root_pass} -e \"GRANT ALL PRIVILEGES ON `#{db}` . * TO '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
           rescue
             logger.info "Database #{db} already exists"
           end
@@ -357,7 +339,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       exit if !defined? "#{root_pass}"
     end
     
-    task :try_login do
+    task :try_login, :roles =>[:host] do
       config_check
       begin
         run "ls"
@@ -373,44 +355,9 @@ Capistrano::Configuration.instance(:must_exist).load do
     
   end
   
-  namespace :ubuntu do
-    
-    task :setup_user do
-      set :user_to_add, "#{user}"
-      set :passwd_to_add, "#{password}"
-      with_user("root", "#{root_pass}") do 
-        run "useradd -d /home/#{user_to_add} -p `openssl passwd #{passwd_to_add}` -m #{user_to_add}"
-        run "chmod -R 0755 /home/#{user_to_add}"
-      end
-    end
-     
-    task :vhost do
-      with_user("root", "#{root_pass}") do 
-        public_ip = ""
-        run "ifconfig eth0 | grep inet | awk '{print $2}' | sed 's/addr://'" do |_, _, public_ip| end
-        public_ip = public_ip.strip
-        roles[:web].servers.each do |webserver|
-          f = File.open(File.join(File.dirname(__FILE__), 'templates/apache_vhost.erb' ))
-          contents = f.read
-          f.close
-          buffer = ERB.new(contents)
-          config = buffer.result(binding())
-          put config, "/etc/apache2/sites-enabled/#{webserver}-apache-vhost.conf"
-        end  
-      end
-    end
-    
-    task :restart do
-      with_user("root", "#{root_pass}") do 
-        run "/etc/init.d/apache2 restart"
-      end
-    end
-    
-  end
-  
   namespace :fedora do
 
-    task :setup_user do
+    task :setup_user, :roles =>[:host] do
       set :user_to_add, "#{user}"
       set :passwd_to_add, "#{password}"
       with_user("root", "#{root_pass}") do 
@@ -419,7 +366,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
     end
   
-    task :vhost do
+    task :vhost, :roles =>[:host] do
       with_user("root", "#{root_pass}") do 
         public_ip = ""
         run "ifconfig eth0 | grep inet | awk '{print $2}' | sed 's/addr://'" do |_, _, public_ip| end
@@ -435,7 +382,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
     end
 
-    task :restart do
+    task :restart, :roles =>[:host] do
       with_user("root", "#{root_pass}") do 
         run "/etc/init.d/httpd restart"
       end
@@ -461,71 +408,75 @@ Capistrano::Configuration.instance(:must_exist).load do
   
   end  
 
-end
 
+  namespace :bundle do 
 
-namespace :bundle do 
-  
-  task :css do
-    paths = get_top_level_directories("#{deploy_to}/public/stylesheets")
-    paths << "#{deploy_to}/public/stylesheets/"
-    Dir.mkdir("#{deploy_to}/public/stylesheets/build") rescue ""
-    paths.each do |bundle_directory|
-      bundle_name = bundle_directory.gsub("#{deploy_to}/public/stylesheets/", "")
-       bundle_name ="common" if bundle_name.empty?
-      files = recursive_file_list(bundle_directory, ".css")
-      next if files.empty? || bundle_name == 'dev'
-      bundle = ''
-      files.each do |file_path|
-        bundle << File.read(file_path) << "\n"
-      end
-      target = "#{deploy_to}/public/stylesheets/build/#{bundle_name}_combined.css"
-      File.open(target, 'w') { |f| f.write(bundle) }
-    end
-    upload "#{deploy_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/build"
-  end
-  
-  task :js do
-    paths = get_top_level_directories("#{deploy_to}/public/javascripts")
-    paths << "#{deploy_to}/public/javascripts/"
-    Dir.mkdir("#{deploy_to}/public/javascripts/build") rescue ""
-    paths.each do |bundle_directory|
-      bundle_name = bundle_directory.gsub("#{deploy_to}/public/javascripts/", "")
-       bundle_name ="common" if bundle_name.empty?
-      files = recursive_file_list(bundle_directory, ".js")
-      next if files.empty? || bundle_name == 'dev'
-      bundle = ''
-      files.each do |file_path|
-        bundle << File.read(file_path) << "\n"
-      end
-      target = "#{deploy_to}/public/javascripts/build/#{bundle_name}_combined.css"
-      File.open(target, 'w') { |f| f.write(bundle) }
-    end
-    upload "#{deploy_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/build"
-    
-  end
-  
-  require 'find'
-  def recursive_file_list(basedir, ext)
-    files = []
-    Find.find(basedir) do |path|
-      if FileTest.directory?(path)
-        if File.basename(path)[0] == ?. # Skip dot directories
-          Find.prune
-        else
-          next
+    task :css, :roles => [:web] do
+      paths = get_top_level_directories("#{deploy_to}/public/stylesheets")
+      paths << "#{deploy_to}/public/stylesheets/"
+      Dir.mkdir("#{deploy_to}/public/stylesheets/build") rescue ""
+      paths.each do |bundle_directory|
+        bundle_name = bundle_directory.gsub("#{deploy_to}/public/stylesheets/", "")
+         bundle_name ="common" if bundle_name.empty?
+        files = recursive_file_list(bundle_directory, ".css")
+        next if files.empty? || bundle_name == 'dev'
+        bundle = ''
+        files.each do |file_path|
+          bundle << File.read(file_path) << "\n"
         end
+        target = "#{deploy_to}/public/stylesheets/build/#{bundle_name}_combined.css"
+        File.open(target, 'w') { |f| f.write(bundle) }
       end
-      files << path if File.extname(path) == ext
+      upload "#{deploy_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/", :via => :scp, :recursive=>true
     end
-    files.sort
+
+    task :js , :roles => [:web] do
+      paths = get_top_level_directories("#{deploy_to}/public/javascripts")
+      paths << "#{deploy_to}/public/javascripts/"
+      Dir.mkdir("#{deploy_to}/public/javascripts/build") rescue ""
+      paths.each do |bundle_directory|
+        bundle_name = bundle_directory.gsub("#{deploy_to}/public/javascripts/", "")
+         bundle_name ="common" if bundle_name.empty?
+        files = recursive_file_list(bundle_directory, ".js")
+        next if files.empty? || bundle_name == 'dev'
+        bundle = ''
+        files.each do |file_path|
+          bundle << File.read(file_path) << "\n"
+        end
+        target = "#{deploy_to}/public/javascripts/build/#{bundle_name}_combined.css"
+        File.open(target, 'w') { |f| f.write(bundle) }
+      end
+      upload "#{deploy_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/", :via => :scp, :recursive=>true
+
+    end
+
+    require 'find'
+    def recursive_file_list(basedir, ext)
+      files = []
+      Find.find(basedir) do |path|
+        if FileTest.directory?(path)
+          if File.basename(path)[0] == ?. # Skip dot directories
+            Find.prune
+          else
+            next
+          end
+        end
+        files << path if File.extname(path) == ext
+      end
+      files.sort
+    end
+
+    def get_top_level_directories(base_path)
+      Dir.entries(base_path).collect do |path|
+        path = "#{base_path}/#{path}"
+        File.basename(path)[0] == ?. || !File.directory?(path) || File.basename(path)=="build" ? nil : path # not dot directories or files
+      end - [nil]
+    end
+
   end
 
-  def get_top_level_directories(base_path)
-    Dir.entries(base_path).collect do |path|
-      path = "#{base_path}/#{path}"
-      File.basename(path)[0] == ?. || !File.directory?(path) || File.basename(path)=="build" ? nil : path # not dot directories or files
-    end - [nil]
-  end
-  
+
+
+
 end
+
