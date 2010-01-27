@@ -443,7 +443,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         files.each do |file_path|
           bundle << File.read(file_path) << "\n"
         end
-        target = "#{deploy_to}/public/javascripts/build/#{bundle_name}_combined.css"
+        target = "#{deploy_to}/public/javascripts/build/#{bundle_name}_combined.js"
         File.open(target, 'w') { |f| f.write(bundle) }
       end
       upload "#{deploy_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/", :via => :scp, :recursive=>true
