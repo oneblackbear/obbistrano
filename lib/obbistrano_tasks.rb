@@ -13,6 +13,8 @@ Capistrano::Configuration.instance(:must_exist).load do
  
     desc "Sets up slicehost DNS for each of the servers specified with a role of web."
     task :setup do
+      puts "*** You need to set a Slicehost API key in /etc/capistrano.conf to run this operation" if !defined? SLICEHOST_API_PASSWORD
+      exit if !defined? SLICEHOST_API_PASSWORD
       get_slice_ip
       servers = find_servers :roles => :web
       servers.each do |s|
@@ -37,6 +39,8 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     desc "Sets up slicehost DNS for Google Apps usage on each of the servers specified with a role of web."
     task :googleapps do
+      puts "*** You need to set a Slicehost API key in /etc/capistrano.conf to run this operation" if !defined? SLICEHOST_API_PASSWORD
+      exit if !defined? SLICEHOST_API_PASSWORD
       SLICEHOST_API_PASSWORD = "#{slicehost_api_key}"
       mx_records = <<-RECORD
       ASPMX.L.GOOGLE.COM.
@@ -111,11 +115,19 @@ Capistrano::Configuration.instance(:must_exist).load do
     # DEPLOYING APPLICATIONS
     # =============================================================================
   
-    task :deploy, :roles =>[:web] do
+    task :full_deploy, :roles =>[:web] do
       host.config_check
       deploy_check
       php_wax_deploy if defined? "#{phpwax}"
       cms_deploy if defined? "#{cms}"
+      bundle.css
+      bundle.js
+    end
+    
+    desc "Deploys the application only - no Framework / Plugins"
+    task :deploy, :roles =>[:web] do
+      host.config_check
+      deploy_check
       bundle.css
       bundle.js
     end
@@ -248,7 +260,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     desc "Uses the specified repository to deploy an application. Also checks for correct versions of PHPWax and plugins."
     task :default, :roles => [:web]  do
       logger.level=-1
-      app.deploy
+      app.full_deploy
     end
   end
   
@@ -271,12 +283,12 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     desc "Restarts the web server."
     task :restart, :roles => [:host] do
+      needs_root      
       fedora.restart
     end
     
     desc "Creates a new Apache VHost."
     task :vhost, :roles => [:host] do
-      config_check
       needs_root
       fedora.vhost
       fedora.restart
@@ -284,7 +296,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     
     desc "Sets up a new user."
     task :setup_user, :roles => [:host] do
-      config_check
       needs_root
       fedora.setup_user
     end
@@ -303,7 +314,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     
     desc "Creates a MySQL user and database"
     task :setup_mysql, :roles =>[:host] do
-      config_check
       needs_root
       set :user_to_add, "#{user}"
       set :passwd_to_add, "#{password}"
@@ -337,9 +347,9 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
   
     task :needs_root do
-      config_check
-      puts "*** This operation needs root access - Please pass in a root password using -s root=password" if !defined? "#{root_pass}"
+      puts "*** This operation needs root access - Please set a root password inside your /etc/capistrano.conf file" if !defined? "#{root_pass}"
       exit if !defined? "#{root_pass}"
+      config_check
     end
     
     task :try_login, :roles =>[:host] do

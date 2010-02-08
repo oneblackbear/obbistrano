@@ -1,5 +1,5 @@
 require 'rubygems'
-require 'activeresource'
+require 'active_resource'
  
 TTL = 86400
 
