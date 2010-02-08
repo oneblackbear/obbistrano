@@ -73,6 +73,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       exit if !defined? "#{github_login}" || !defined? "#{github_token}"
     end
     
+    desc "Sets up a Github Project and allows access for the devs at One Black Bear"
     task :setup do
       init
       api = GithubApi.new("#{github_login}", "#{github_token}")
@@ -87,9 +88,11 @@ Capistrano::Configuration.instance(:must_exist).load do
       api.add_collaborator("Sheldon")
       api.add_collaborator("charlesmarshall")
       api.add_collaborator("MichalNoskovic")
+      api.add_collaborator("AndrewLowther")
       github:key
     end
     
+    desc "Grabs the SSH key from the server and adds it to the Github deploy keys"
     task :key do
       init
       api = GithubApi.new("#{github_login}", "#{github_token}")
