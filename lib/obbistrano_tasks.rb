@@ -222,12 +222,12 @@ Capistrano::Configuration.instance(:must_exist).load do
   
     desc "Clears the application's cache files from tmp/cache."
     task :clearcache, :roles =>[:web] do
-      run "cd #{deploy_to} && rm -f tmp/cache/*"
+      run "cd #{deploy_to} && find tmp/cache -type f -exec rm -f \"{}\" \\;"
     end
   
     desc "Clears the application's log files from tmp/log."
     task :clearlogs, :roles =>[:web] do
-      run "cd #{deploy_to} && rm -f tmp/log/*"
+      run "cd #{deploy_to} && find tmp/log -type f -exec rm -f \"{}\" \\;"
     end
     
   
