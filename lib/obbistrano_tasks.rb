@@ -4,6 +4,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   task :config_setup do
     set :root_pass, root rescue nil
     set :environment, environment rescue set :environment, "production"
+    set :build_to, build_to rescue set :build_to, deploy_to
   end
 
  
@@ -92,7 +93,6 @@ Capistrano::Configuration.instance(:must_exist).load do
       api.add_collaborator("Sheldon")
       api.add_collaborator("charlesmarshall")
       api.add_collaborator("MichalNoskovic")
-      api.add_collaborator("AndrewLowther")
       github:key
     end
     
@@ -134,8 +134,17 @@ Capistrano::Configuration.instance(:must_exist).load do
   
     task :deploy_check, :roles =>[:web] do 
       fetch "repository" rescue abort "You have not specified a repository for this application"
+      git_copy if deploy_via=="copy"
       git_deploy if repository.include? "git"
       svn_deploy if repository.include? "svn"
+    end
+    
+    task :git_copy, :roles=>[:web] do
+      Dir.mkdir("tmp/deploy_cache") rescue ""
+      system("git clone --depth 1 #{repository} tmp/deploy_cache/" )
+      system("cd tmp/deploy_cache/ && git checkout -b #{branch} origin/#{branch}" )
+      upload "tmp/deploy_cache/", "#{deploy_to}", :via => :scp, :recursive=>true
+      FileUtils.rm_rf 'tmp/deploy_cache'
     end
   
     task :git_deploy, :roles =>[:web] do
@@ -322,7 +331,7 @@ Capistrano::Configuration.instance(:must_exist).load do
           begin
             run "mysql -uroot -p#{root_pass} -e \"CREATE USER '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
             run "mysql -uroot -p#{root_pass} -e 'CREATE DATABASE #{db}'"
-            run "mysql -uroot -p#{root_pass} -e \"GRANT ALL PRIVILEGES ON `#{db}` . * TO '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
+            run "mysql -uroot -p#{root_pass} -e \"GRANT ALL PRIVILEGES ON #{db}.* TO '#{user_to_add}'@'localhost' IDENTIFIED BY '#{passwd_to_add}';\""
           rescue
             logger.info "Database #{db} already exists"
           end
@@ -374,7 +383,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       set :user_to_add, "#{user}"
       set :passwd_to_add, "#{password}"
       with_user("root", "#{root_pass}") do 
-        run "useradd -p `openssl passwd #{passwd_to_add}` #{user_to_add}"
+        run "useradd -m -r -p `openssl passwd #{passwd_to_add}` #{user_to_add}"
         run "chmod -R 0755 /home/#{user_to_add}"
       end
     end
@@ -425,41 +434,41 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :bundle do 
 
     task :css, :roles => [:web] do
-      paths = get_top_level_directories("#{deploy_to}/public/stylesheets")
-      paths << "#{deploy_to}/public/stylesheets/"
-      Dir.mkdir("#{deploy_to}/public/stylesheets/build") rescue ""
+      paths = get_top_level_directories("#{build_to}/public/stylesheets")
+      paths << "#{build_to}/public/stylesheets/"
+      Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
       paths.each do |bundle_directory|
-        bundle_name = bundle_directory.gsub("#{deploy_to}/public/stylesheets/", "")
-         bundle_name ="common" if bundle_name.empty?
+        bundle_name = bundle_directory.gsub("#{build_to}/public/stylesheets/", "")
+        next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".css")
         next if files.empty? || bundle_name == 'dev'
         bundle = ''
         files.each do |file_path|
           bundle << File.read(file_path) << "\n"
         end
-        target = "#{deploy_to}/public/stylesheets/build/#{bundle_name}_combined.css"
+        target = "#{build_to}/public/stylesheets/build/#{bundle_name}_combined.css"
         File.open(target, 'w') { |f| f.write(bundle) }
       end
-      upload "#{deploy_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/", :via => :scp, :recursive=>true
+      upload "#{build_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/", :via => :scp, :recursive=>true
     end
 
     task :js , :roles => [:web] do
-      paths = get_top_level_directories("#{deploy_to}/public/javascripts")
-      paths << "#{deploy_to}/public/javascripts/"
-      Dir.mkdir("#{deploy_to}/public/javascripts/build") rescue ""
+      paths = get_top_level_directories("#{build_to}/public/javascripts")
+      paths << "#{build_to}/public/javascripts/"
+      Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
-        bundle_name = bundle_directory.gsub("#{deploy_to}/public/javascripts/", "")
-         bundle_name ="common" if bundle_name.empty?
+        bundle_name = bundle_directory.gsub("#{build_to}/public/javascripts/", "")
+        next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".js")
         next if files.empty? || bundle_name == 'dev'
         bundle = ''
         files.each do |file_path|
           bundle << File.read(file_path) << "\n"
         end
-        target = "#{deploy_to}/public/javascripts/build/#{bundle_name}_combined.js"
+        target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.js"
         File.open(target, 'w') { |f| f.write(bundle) }
       end
-      upload "#{deploy_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/", :via => :scp, :recursive=>true
+      upload "#{build_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/", :via => :scp, :recursive=>true
 
     end
 
