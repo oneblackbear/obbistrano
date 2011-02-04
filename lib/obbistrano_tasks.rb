@@ -439,6 +439,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
       paths.each do |bundle_directory|
         bundle_name = bundle_directory.gsub("#{build_to}/public/stylesheets/", "")
+        bundle_name = if bundle_name.index("/") then bundle_name[0..bundle_name.index("/")-1] else bundle_name end
         next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".css")
         next if files.empty? || bundle_name == 'dev'
