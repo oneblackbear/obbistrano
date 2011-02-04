@@ -459,6 +459,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
         bundle_name = bundle_directory.gsub("#{build_to}/public/javascripts/", "")
+        bundle_name = if bundle_name.index("/") then bundle_name[0..bundle_name.index("/")-1] else bundle_name end
         next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".js")
         next if files.empty? || bundle_name == 'dev'
