@@ -434,11 +434,11 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :bundle do 
 
     task :css, :roles => [:web] do
-      paths = get_top_level_directories("#{build_to}/public/stylesheets")
+      paths = get_top_level_directories("#{build_to}/public/stylesheets") | get_top_level_directories("#{build_to}/plugins/cms/resources/public/stylesheets")    
       paths << "#{build_to}/public/stylesheets/"
       Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
       paths.each do |bundle_directory|
-        bundle_name = bundle_directory.gsub("#{build_to}/public/stylesheets/", "")
+        bundle_name = if bundle_directory.index("plugins") then bundle_directory.gsub("#{build_to}/plugins/cms/resources/public/stylesheets", "") else bundle_directory.gsub("#{build_to}/public/stylesheets/", "") end
         bundle_name = if bundle_name.index("/") then bundle_name[0..bundle_name.index("/")-1] else bundle_name end
         next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".css")
@@ -454,11 +454,11 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
     task :js , :roles => [:web] do
-      paths = get_top_level_directories("#{build_to}/public/javascripts")
+      paths = get_top_level_directories("#{build_to}/public/javascripts") | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts")
       paths << "#{build_to}/public/javascripts/"
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
-        bundle_name = bundle_directory.gsub("#{build_to}/public/javascripts/", "")
+        bundle_name = if bundle_directory.index("plugins") then bundle_directory.gsub("#{build_to}/plugins/cms/resources/public/javascripts", "") else bundle_directory.gsub("#{build_to}/public/javascripts/", "") end
         bundle_name = if bundle_name.index("/") then bundle_name[0..bundle_name.index("/")-1] else bundle_name end
         next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".js")
@@ -498,7 +498,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
   end
-
 
 
 
