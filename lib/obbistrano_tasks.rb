@@ -134,7 +134,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   
     task :deploy_check, :roles =>[:web] do 
       fetch "repository" rescue abort "You have not specified a repository for this application"
-      git_copy if deploy_via=="copy"
+      git_copy if deploy_via=="copy" rescue ""
       git_deploy if repository.include? "git"
       svn_deploy if repository.include? "svn"
     end
@@ -339,6 +339,21 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
     end
     
+    desc "Detects what flavour of linux is being used"
+    task :detect_os, :roles =>[:host] do
+      begin
+        run "cat /etc/fedora-release"
+        set :os_ver, "fedora"
+      rescue
+        run "cat /etc/debian_version"
+        set :os_ver, "ubuntu"
+      rescue
+        puts "*** Operating System could not be detected or is not supported" if !defined? "#{os_ver}"
+        exit if !defined? "#{os_ver}"
+      end
+      eval "#{os_ver}".testos
+    end
+    
     
     # =============================================================================
     # +MIGRATING+ APPLICATIONS
@@ -409,7 +424,19 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "/etc/init.d/httpd restart"
       end
     end
+    
+    task :ostest, :roles => [:host] do 
+      puts "#{os_ver}"
+      exit
+    end
 
+  end
+  
+  namespace :ubuntu do
+    task :ostest, :roles => [:host] do 
+      puts "#{os_ver}"
+      exit
+    end
   end
   
   task :mirror do 
