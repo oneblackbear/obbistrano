@@ -461,7 +461,8 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :bundle do 
 
     task :css, :roles => [:web] do
-      paths = get_top_level_directories("#{build_to}/public/stylesheets") | get_top_level_directories("#{build_to}/plugins/cms/resources/public/stylesheets")    
+      paths = get_top_level_directories("#{build_to}/public/stylesheets")
+      paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/stylesheets") if defined? "#{cms}"
       paths << "#{build_to}/public/stylesheets/"
       Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
       paths.each do |bundle_directory|
@@ -481,7 +482,8 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
     task :js , :roles => [:web] do
-      paths = get_top_level_directories("#{build_to}/public/javascripts") | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts")
+      paths = get_top_level_directories("#{build_to}/public/javascripts")
+      paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts") if defined? "#{cms}"
       paths << "#{build_to}/public/javascripts/"
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
