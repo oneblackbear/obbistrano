@@ -161,11 +161,11 @@ Capistrano::Configuration.instance(:must_exist).load do
       logger.level = 2
       run "cd #{deploy_to} && git fetch"
       begin
-        run "cd #{deploy_to} && git checkout -b #{branch} origin/#{branch}"
+        run "cd #{deploy_to} && git checkout -b #{branch} origin/#{branch} && git submodule update --init --recursive"
       rescue
         run "cd #{deploy_to} && git pull origin #{branch}"
-        run "cd #{deploy_to} && git checkout #{branch}"
-        run "cd #{deploy_to} && git checkout #{commit}" if defined? "#{commit}"
+        run "cd #{deploy_to} && git checkout #{branch} && git submodule update --init --recursive"
+        run "cd #{deploy_to} && git checkout #{commit} && git submodule update --init --recursive" if defined? "#{commit}"
       end
       
       logger.info "Application has been updated on branch #{branch}"
