@@ -390,9 +390,6 @@ Capistrano::Configuration.instance(:must_exist).load do
       eval "#{os_ver}".testos
     end
     
-
-      
-    end
     
     
     # =============================================================================
