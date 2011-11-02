@@ -239,6 +239,42 @@ Capistrano::Configuration.instance(:must_exist).load do
       run "cd #{deploy_to} && find tmp/log -type f -exec rm -f \"{}\" \\;"
     end
     
+    
+    desc "Uses configs in the app/platform directory to configure servers"
+    task :install, :roles =>[:host] do 
+      config_check
+      needs_root
+      begin
+        with_user("root", "#{root_pass}") do 
+          run "ln -s /etc/nginx/sites-enabled/#{user}.conf #{deploy_to}/app/platform/nginx.conf"
+          run "ln -s /etc/apache2/sites-enabled/#{user}.conf #{deploy_to}/app/platform/apache.conf"
+        end
+        user_cron_tasks = capture("cat #{deploy_to}/app/platform/crontab")
+        run write_crontab(user_cron_tasks)
+      rescue
+        
+      end
+    end
+    
+    def write_crontab(data)
+      tmp_cron_file = Tempfile.new('temp_cron').path
+      File.open(tmp_cron_file, File::WRONLY | File::APPEND) do |file|
+        file.puts data
+      end
+
+      command = ['crontab']
+      command << "-u #{user}" if defined? "#{user}"
+      command << tmp_cron_file
+
+      if system(command.join(' '))
+        puts "[write] crontab file updated"
+        exit
+      else
+        warn "[fail] couldn't write crontab"
+        exit(1)
+      end
+    end
+    
   
   end
 
@@ -352,6 +388,10 @@ Capistrano::Configuration.instance(:must_exist).load do
         exit if !defined? "#{os_ver}"
       end
       eval "#{os_ver}".testos
+    end
+    
+
+      
     end
     
     
