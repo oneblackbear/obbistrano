@@ -247,8 +247,8 @@ Capistrano::Configuration.instance(:must_exist).load do
       set :user_to_config, "#{user}"
       begin
         with_user("root", "#{root_pass}") do 
-          run "rm -f /etc/nginx/sites-enabled/#{user_to_config}.conf; cd /home/#{user_to_config}/ && ln -s #{deploy_to}/app/platform/nginx.conf /etc/nginx/sites-enabled/#{user_to_config}.conf"
-          run "rm -f /etc/apache2/sites-enabled/#{user_to_config}.conf; cd /home/#{user_to_config}/ && ln -s #{deploy_to}/app/platform/apache.conf /etc/apache2/sites-enabled/#{user_to_config}.conf"
+          run "rm -f /etc/nginx/sites-enabled/#{user_to_config}.conf; ln -s /home/#{user_to_config}/#{deploy_to}/app/platform/nginx.conf /etc/nginx/sites-enabled/#{user_to_config}.conf"
+          run "rm -f /etc/apache2/sites-enabled/#{user_to_config}.conf; ln -s /home/#{user_to_config}/#{deploy_to}/app/platform/apache.conf /etc/apache2/sites-enabled/#{user_to_config}.conf"
         end
         user_cron_tasks = capture("cat #{deploy_to}/app/platform/crontab")
         run write_crontab(user_cron_tasks)
