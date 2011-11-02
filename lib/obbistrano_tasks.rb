@@ -242,8 +242,8 @@ Capistrano::Configuration.instance(:must_exist).load do
     
     desc "Uses configs in the app/platform directory to configure servers"
     task :install, :roles =>[:host] do 
-      config_check
-      needs_root
+      host.config_check
+      host.needs_root
       begin
         with_user("root", "#{root_pass}") do 
           run "ln -s /etc/nginx/sites-enabled/#{user}.conf #{deploy_to}/app/platform/nginx.conf"
