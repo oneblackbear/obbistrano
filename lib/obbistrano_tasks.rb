@@ -244,10 +244,11 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :install, :roles =>[:host] do 
       host.config_check
       host.needs_root
+      set :user_to_config, "#{user}"
       begin
         with_user("root", "#{root_pass}") do 
-          run "ln -s /etc/nginx/sites-enabled/#{user}.conf #{deploy_to}/app/platform/nginx.conf"
-          run "ln -s /etc/apache2/sites-enabled/#{user}.conf #{deploy_to}/app/platform/apache.conf"
+          run "ln -s /etc/nginx/sites-enabled/#{user_to_config}.conf #{deploy_to}/app/platform/nginx.conf"
+          run "ln -s /etc/apache2/sites-enabled/#{user_to_config}.conf #{deploy_to}/app/platform/apache.conf"
         end
         user_cron_tasks = capture("cat #{deploy_to}/app/platform/crontab")
         run write_crontab(user_cron_tasks)
