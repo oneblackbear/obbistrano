@@ -149,7 +149,18 @@ Capistrano::Configuration.instance(:must_exist).load do
   
     task :git_deploy, :roles =>[:web] do
       logger.level = 2
-      logger.info "Deploying application from #{repository} on branch #{branch}"
+      
+      set :local_branch, $1 if `git branch` =~ /\* (\S+)\s/m
+      if !local_branch.eql? branch
+        logger.info "You are on branch #{local_branch}, not #{branch}, please check out there before deploying to be able to combine the correct js and css files." 
+        exit
+      end
+      
+      if defined? "#{commit}"
+        logger.info "Deploying application from #{repository} on commit #{commit}"
+      else
+        logger.info "Deploying application from #{repository} on branch #{branch}"
+      end
       logger.level = -1
       begin
         run "ls #{deploy_to}/.git"
@@ -159,7 +170,9 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "cd #{deploy_to} && git remote add origin #{repository}"
       end
       logger.level = 2
+      
       run "cd #{deploy_to} && git fetch"
+      
       if defined? "#{commit}"
         run "cd #{deploy_to} && git checkout #{commit} && git submodule update --init --recursive"
       else
