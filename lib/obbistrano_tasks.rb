@@ -149,7 +149,18 @@ Capistrano::Configuration.instance(:must_exist).load do
   
     task :git_deploy, :roles =>[:web] do
       logger.level = 2
-      logger.info "Deploying application from #{repository} on branch #{branch}"
+      
+      set :local_branch, $1 if `git branch` =~ /\* (\S+)\s/m
+      if !local_branch.eql? branch
+        logger.info "You are on branch #{local_branch}, not #{branch}, please check out there before deploying to be able to combine the correct js and css files." 
+        exit
+      end
+      
+      if defined? "#{commit}"
+        logger.info "Deploying application from #{repository} on commit #{commit}"
+      else
+        logger.info "Deploying application from #{repository} on branch #{branch}"
+      end
       logger.level = -1
       begin
         run "ls #{deploy_to}/.git"
@@ -159,13 +170,17 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "cd #{deploy_to} && git remote add origin #{repository}"
       end
       logger.level = 2
+      
       run "cd #{deploy_to} && git fetch"
-      begin
-        run "cd #{deploy_to} && git checkout -b #{branch} origin/#{branch} && git submodule update --init --recursive"
-      rescue
-        run "cd #{deploy_to} && git pull origin #{branch}"
-        run "cd #{deploy_to} && git checkout #{branch} && git submodule update --init --recursive"
-        run "cd #{deploy_to} && git checkout #{commit} && git submodule update --init --recursive" if defined? "#{commit}"
+      
+      if defined? "#{commit}"
+        run "cd #{deploy_to} && git checkout #{commit} && git submodule update --init --recursive"
+      else
+        begin
+          run "cd #{deploy_to} && git show-branch #{branch} && git checkout #{branch} && git reset --hard origin/#{branch} && git submodule update --init --recursive"
+        rescue
+          run "cd #{deploy_to} && git checkout -b #{branch} origin/#{branch} && git submodule update --init --recursive"
+        end
       end
       
       logger.info "Application has been updated on branch #{branch}"
@@ -499,48 +514,60 @@ Capistrano::Configuration.instance(:must_exist).load do
 
   namespace :bundle do 
 
-    task :css, :roles => [:web] do
-      paths = get_top_level_directories("#{build_to}/public/stylesheets")
-      paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/stylesheets") if defined? "#{cms}"
-      paths << "#{build_to}/public/stylesheets/"
-      Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
-      paths.each do |bundle_directory|
-        bundle_name = if bundle_directory.index("plugins") then bundle_directory.gsub("#{build_to}/plugins/cms/resources/public/stylesheets", "") else bundle_directory.gsub("#{build_to}/public/stylesheets/", "") end
-        bundle_name = if bundle_name.index("/") then bundle_name[0..bundle_name.index("/")-1] else bundle_name end
-        next if bundle_name.empty?
-        files = recursive_file_list(bundle_directory, ".css")
-        next if files.empty? || bundle_name == 'dev'
-        bundle = ''
-        files.each do |file_path|
-          bundle << File.read(file_path) << "\n"
-        end
-        target = "#{build_to}/public/stylesheets/build/#{bundle_name}_combined.css"
-        File.open(target, 'w') { |f| f.write(bundle) }
+   task :css, :roles => [:web] do
+    paths = get_top_level_directories("#{build_to}/public/stylesheets")
+    paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/stylesheets") if defined? "#{cms}"
+    paths << "#{build_to}/public/stylesheets/"
+    if defined? "#{plugins}"
+      plugins.each do |plugin|
+        paths << "#{build_to}/plugins/#{plugin}/resources/public/stylesheets"
       end
-      upload "#{build_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/", :via => :scp, :recursive=>true
     end
-
-    task :js , :roles => [:web] do
-      paths = get_top_level_directories("#{build_to}/public/javascripts")
-      paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts") if defined? "#{cms}"
-      paths << "#{build_to}/public/javascripts/"
-      Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
-      paths.each do |bundle_directory|
-        bundle_name = if bundle_directory.index("plugins") then bundle_directory.gsub("#{build_to}/plugins/cms/resources/public/javascripts", "") else bundle_directory.gsub("#{build_to}/public/javascripts/", "") end
-        bundle_name = if bundle_name.index("/") then bundle_name[0..bundle_name.index("/")-1] else bundle_name end
-        next if bundle_name.empty?
-        files = recursive_file_list(bundle_directory, ".js")
-        next if files.empty? || bundle_name == 'dev'
-        bundle = ''
-        files.each do |file_path|
-          bundle << File.read(file_path) << "\n"
-        end
-        target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.js"
-        File.open(target, 'w') { |f| f.write(bundle) }
+    Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
+    paths.each do |bundle_directory|      
+      bundle_name = bundle_directory.gsub(/(cms)|(\/plugins)|(resources)|(public)|(stylesheets)|(\/)/i, "")
+      bundle_name = if(bundle_name.index(".") == 0) then bundle_name[1..bundle_name.length] else bundle_name end
+      next if bundle_name.empty?
+      files = recursive_file_list(bundle_directory, ".css")
+      next if files.empty? || bundle_name == 'dev'
+      bundle = ''
+      files.each do |file_path|
+        bundle << File.read(file_path) << "\n"
       end
-      upload "#{build_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/", :via => :scp, :recursive=>true
-
+      target = "#{build_to}/public/stylesheets/build/#{bundle_name}_combined.css"
+      File.open(target, 'w') { |f| f.write(bundle) }
     end
+    upload "#{build_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/", :via => :scp, :recursive=>true
+  end
+
+  task :js , :roles => [:web] do
+    paths = get_top_level_directories("#{build_to}/public/javascripts")
+    paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts") if defined? "#{cms}"
+    paths << "#{build_to}/public/javascripts/"
+    if defined? "#{plugins}"
+      plugins.each do |plugin|
+        paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
+      end
+    end
+    Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
+    paths.each do |bundle_directory|
+      puts bundle_directory
+      bundle_name = bundle_directory.gsub(/(cms)|(\/plugins)|(resources)|(public)|(javascripts)|(\/)/i, "")
+      bundle_name = if(bundle_name.index(".") == 0) then bundle_name[1..bundle_name.length] else bundle_name end
+      next if bundle_name.empty?
+      files = recursive_file_list(bundle_directory, ".js")
+      next if files.empty? || bundle_name == 'dev'
+      bundle = ''
+      files.each do |file_path|
+        bundle << File.read(file_path) << "\n"
+      end
+      target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.js"
+      File.open(target, 'w') { |f| f.write(bundle) }
+    end
+    upload "#{build_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/", :via => :scp, :recursive=>true
+
+  end
+  
 
     require 'find'
     def recursive_file_list(basedir, ext)
