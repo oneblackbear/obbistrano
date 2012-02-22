@@ -251,6 +251,7 @@ Capistrano::Configuration.instance(:must_exist).load do
           run "rm -f /etc/apache2/sites-enabled/#{user_to_config}.conf; ln -s /home/#{user_to_config}/#{deploy_to}/app/platform/apache.conf /etc/apache2/sites-enabled/#{user_to_config}.conf"
         end
         user_cron_tasks = capture("cat #{deploy_to}/app/platform/crontab")
+        logger.info "Writing User Cron File"
         write_crontab(user_cron_tasks)
       rescue
         
