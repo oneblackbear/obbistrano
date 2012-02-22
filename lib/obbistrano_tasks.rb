@@ -517,6 +517,11 @@ Capistrano::Configuration.instance(:must_exist).load do
       paths = get_top_level_directories("#{build_to}/public/stylesheets")
       paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/stylesheets") if defined? "#{cms}"
       paths << "#{build_to}/public/stylesheets/"
+      if defined? "#{plugins}"
+        plugins.each do |plugin|
+          paths << "#{build_to}/plugins/#{plugin}/resources/public/stylesheets"
+        end
+      end
       Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
       paths.each do |bundle_directory|
         bundle_name = if bundle_directory.index("plugins") then bundle_directory.gsub("#{build_to}/plugins/cms/resources/public/stylesheets", "") else bundle_directory.gsub("#{build_to}/public/stylesheets/", "") end
@@ -538,6 +543,11 @@ Capistrano::Configuration.instance(:must_exist).load do
       paths = get_top_level_directories("#{build_to}/public/javascripts")
       paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts") if defined? "#{cms}"
       paths << "#{build_to}/public/javascripts/"
+      if defined? "#{plugins}"
+        plugins.each do |plugin|
+          paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
+        end
+      end
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
         bundle_name = if bundle_directory.index("plugins") then bundle_directory.gsub("#{build_to}/plugins/cms/resources/public/javascripts", "") else bundle_directory.gsub("#{build_to}/public/javascripts/", "") end
