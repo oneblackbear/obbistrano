@@ -515,51 +515,89 @@ Capistrano::Configuration.instance(:must_exist).load do
 
    task :css, :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/stylesheets")
-    paths << "#{build_to}/public/stylesheets/"
-    if defined? "#{plugins}"
-      plugins.each do |plugin|
-        paths << "#{build_to}/plugins/#{plugin}/resources/public/stylesheets"
+    if defined? "#{newdeploy}" then      
+      paths << "#{build_to}/public/stylesheets/"
+      if defined? "#{plugins}"
+        plugins.each do |plugin|
+          paths << "#{build_to}/plugins/#{plugin}/resources/public/stylesheets"
+        end
       end
-    end
-    Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
-    paths.each do |bundle_directory|      
-      bundle_name = bundle_directory.gsub(/(\/plugins)|(resources)|(public)|(stylesheets)|(\/)/i, "")
-      bundle_name = if(bundle_name.index(".") == 0) then bundle_name[1..bundle_name.length] else bundle_name end
-      next if bundle_name.empty?
-      files = recursive_file_list(bundle_directory, ".css")
-      next if files.empty? || bundle_name == 'dev'
-      bundle = ''
-      files.each do |file_path|
-        bundle << File.read(file_path) << "\n"
+      Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
+      paths.each do |bundle_directory|      
+        bundle_name = bundle_directory.gsub(/(\/plugins)|(resources)|(public)|(stylesheets)|(\/)/i, "")
+        bundle_name = if(bundle_name.index(".") == 0) then bundle_name[1..bundle_name.length] else bundle_name end
+        next if bundle_name.empty?
+        files = recursive_file_list(bundle_directory, ".css")
+        next if files.empty? || bundle_name == 'dev'
+        bundle = ''
+        files.each do |file_path|
+          bundle << File.read(file_path) << "\n"
+        end
+        target = "#{build_to}/public/stylesheets/build/#{bundle_name}_combined.css"
+        File.open(target, 'w') { |f| f.write(bundle) }
       end
-      target = "#{build_to}/public/stylesheets/build/#{bundle_name}_combined.css"
-      File.open(target, 'w') { |f| f.write(bundle) }
+    else
+      paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/stylesheets") if defined? "#{cms}"
+      paths << "#{build_to}/public/stylesheets/"
+      Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
+      paths.each do |bundle_directory|
+        bundle_name = if bundle_directory.index("plugins") then bundle_directory.gsub("#{build_to}/plugins/cms/resources/public/stylesheets", "") else bundle_directory.gsub("#{build_to}/public/stylesheets/", "") end
+        bundle_name = if bundle_name.index("/") then bundle_name[0..bundle_name.index("/")-1] else bundle_name end
+        next if bundle_name.empty?
+        files = recursive_file_list(bundle_directory, ".css")
+        next if files.empty? || bundle_name == 'dev'
+        bundle = ''
+        files.each do |file_path|
+          bundle << File.read(file_path) << "\n"
+        end
+        target = "#{build_to}/public/stylesheets/build/#{bundle_name}_combined.css"
+        File.open(target, 'w') { |f| f.write(bundle) }
+      end
     end
     upload "#{build_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/", :via => :scp, :recursive=>true
   end
 
   task :js , :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/javascripts")
-    paths << "#{build_to}/public/javascripts/"
-    if defined? "#{plugins}"
-      plugins.each do |plugin|
-        paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
+    if defined? "#{newdeploy}" then      
+      paths << "#{build_to}/public/javascripts/"
+      if defined? "#{plugins}"
+        plugins.each do |plugin|
+          paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
+        end
       end
-    end
-    Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
-    paths.each do |bundle_directory|
-      puts bundle_directory
-      bundle_name = bundle_directory.gsub(/(\/plugins)|(resources)|(public)|(javascripts)|(\/)/i, "")
-      bundle_name = if(bundle_name.index(".") == 0) then bundle_name[1..bundle_name.length] else bundle_name end
-      next if bundle_name.empty?
-      files = recursive_file_list(bundle_directory, ".js")
-      next if files.empty? || bundle_name == 'dev'
-      bundle = ''
-      files.each do |file_path|
-        bundle << File.read(file_path) << "\n"
+      Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
+      paths.each do |bundle_directory|
+        puts bundle_directory
+        bundle_name = bundle_directory.gsub(/(\/plugins)|(resources)|(public)|(javascripts)|(\/)/i, "")
+        bundle_name = if(bundle_name.index(".") == 0) then bundle_name[1..bundle_name.length] else bundle_name end
+        next if bundle_name.empty?
+        files = recursive_file_list(bundle_directory, ".js")
+        next if files.empty? || bundle_name == 'dev'
+        bundle = ''
+        files.each do |file_path|
+          bundle << File.read(file_path) << "\n"
+        end
+        target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.js"
+        File.open(target, 'w') { |f| f.write(bundle) }
       end
-      target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.js"
-      File.open(target, 'w') { |f| f.write(bundle) }
+    else
+      paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts") if defined? "#{cms}"
+      paths << "#{build_to}/public/javascripts/"
+      Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
+      paths.each do |bundle_directory|
+        bundle_name = if bundle_directory.index("plugins") then bundle_directory.gsub("#{build_to}/plugins/cms/resources/public/javascripts", "") else bundle_directory.gsub("#{build_to}/public/javascripts/", "") end
+        bundle_name = if bundle_name.index("/") then bundle_name[0..bundle_name.index("/")-1] else bundle_name end
+        next if bundle_name.empty?
+        files = recursive_file_list(bundle_directory, ".js")
+        next if files.empty? || bundle_name == 'dev'
+        bundle = ''
+        files.each do |file_path|
+          bundle << File.read(file_path) << "\n"
+        end
+        target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.js"
+        File.open(target, 'w') { |f| f.write(bundle) }
+      end
     end
     upload "#{build_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/", :via => :scp, :recursive=>true
 
