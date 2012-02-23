@@ -515,7 +515,6 @@ Capistrano::Configuration.instance(:must_exist).load do
 
    task :css, :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/stylesheets")
-    paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/stylesheets") if defined? "#{cms}"
     paths << "#{build_to}/public/stylesheets/"
     if defined? "#{plugins}"
       plugins.each do |plugin|
@@ -524,7 +523,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
     paths.each do |bundle_directory|      
-      bundle_name = bundle_directory.gsub(/(cms)|(\/plugins)|(resources)|(public)|(stylesheets)|(\/)/i, "")
+      bundle_name = bundle_directory.gsub(/(\/plugins)|(resources)|(public)|(stylesheets)|(\/)/i, "")
       bundle_name = if(bundle_name.index(".") == 0) then bundle_name[1..bundle_name.length] else bundle_name end
       next if bundle_name.empty?
       files = recursive_file_list(bundle_directory, ".css")
@@ -541,7 +540,6 @@ Capistrano::Configuration.instance(:must_exist).load do
 
   task :js , :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/javascripts")
-    paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts") if defined? "#{cms}"
     paths << "#{build_to}/public/javascripts/"
     if defined? "#{plugins}"
       plugins.each do |plugin|
@@ -551,7 +549,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
     paths.each do |bundle_directory|
       puts bundle_directory
-      bundle_name = bundle_directory.gsub(/(cms)|(\/plugins)|(resources)|(public)|(javascripts)|(\/)/i, "")
+      bundle_name = bundle_directory.gsub(/(\/plugins)|(resources)|(public)|(javascripts)|(\/)/i, "")
       bundle_name = if(bundle_name.index(".") == 0) then bundle_name[1..bundle_name.length] else bundle_name end
       next if bundle_name.empty?
       files = recursive_file_list(bundle_directory, ".js")
