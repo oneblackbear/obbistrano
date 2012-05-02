@@ -513,20 +513,26 @@ Capistrano::Configuration.instance(:must_exist).load do
 
   namespace :bundle do
 
-   task :css, :roles => [:web] do
+
+  task :css, :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/stylesheets")
     if defined? "#{newdeploy}" then
-      paths << "#{build_to}/public/stylesheets/"
       if defined? "#{plugins}"
         plugins.each do |plugin|
-          print "#{plugin}"
+          print "plugin: #{plugin}\n"
           paths << "#{build_to}/plugins/#{plugin}/resources/public/stylesheets"
         end
       end
+      puts "--"
+      paths.each do |path|
+        puts "folders: #{path}\n"
+      end
       Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
       paths.each do |bundle_directory|
-        bundle_name = bundle_directory.gsub("#{build_to}/", "").gsub("plugins/", "").gsub("/resources/public/stylesheets", "")
-        puts "  #{bundle_name}"
+        puts "--"
+        puts "directory: #{bundle_directory}"
+        bundle_name = bundle_directory.gsub("#{build_to}/", "").gsub("plugins/", "").gsub("/resources/public/stylesheets", "").gsub("public/stylesheets/", "")
+        puts " bundle name: #{bundle_name}"
         next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".css")
         next if files.empty? || bundle_name == 'dev'
@@ -558,21 +564,25 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
     upload "#{build_to}/public/stylesheets/build", "#{deploy_to}/public/stylesheets/", :via => :scp, :recursive=>true
   end
-
   task :js , :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/javascripts")
     if defined? "#{newdeploy}" then
-      paths << "#{build_to}/public/javascripts/"
       if defined? "#{plugins}"
         plugins.each do |plugin|
+          print "plugin: #{plugin}\n"
           paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
         end
       end
+      puts "--"
+      paths.each do |path|
+        puts "folders: #{path}\n"
+      end
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
-        puts bundle_directory
-        bundle_name = bundle_directory.gsub("#{build_to}/", "").gsub("plugins/", "").gsub("/resources/public/javascripts", "")
-        puts "  #{bundle_name}"
+        puts "--"
+        puts "directory: #{bundle_directory}"
+        bundle_name = bundle_directory.gsub("#{build_to}/", "").gsub("plugins/", "").gsub("/resources/public/javascripts", "").gsub("public/javascripts/", "")
+        puts " bundle name: #{bundle_name}"
         next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".js")
         next if files.empty? || bundle_name == 'dev'
@@ -580,7 +590,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         files.each do |file_path|
           bundle << File.read(file_path) << "\n"
         end
-        target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.js"
+        target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.css"
         File.open(target, 'w') { |f| f.write(bundle) }
       end
     else
@@ -602,8 +612,8 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
     end
     upload "#{build_to}/public/javascripts/build", "#{deploy_to}/public/javascripts/", :via => :scp, :recursive=>true
-
   end
+
 
 
     require 'find'
