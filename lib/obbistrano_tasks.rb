@@ -590,7 +590,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         files.each do |file_path|
           bundle << File.read(file_path) << "\n"
         end
-        target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.css"
+        target = "#{build_to}/public/javascripts/build/#{bundle_name}_combined.js"
         File.open(target, 'w') { |f| f.write(bundle) }
       end
     else
