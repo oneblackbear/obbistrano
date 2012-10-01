@@ -120,8 +120,13 @@ Capistrano::Configuration.instance(:must_exist).load do
       deploy_check
       php_wax_deploy if defined? "#{phpwax}"
       cms_deploy if defined? "#{cms}"
+      symlink if defined? "#{environment}"
       bundle.css
       bundle.js
+    end
+    
+    task :symlink, :roles =>[:web] do
+      run "ln -s #{deploy_to}/app/config/bootstrap_#{environment}.php #{deploy_to}/app/config/bootstrap.php"
     end
 
     desc "Deploys the application only - no Framework / Plugins"
