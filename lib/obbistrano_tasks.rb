@@ -47,6 +47,14 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
     end
   end
+  
+  def remote_file_exists?(full_path)
+    'true' == capture("if [ -e #{full_path} ]; then echo 'true'; fi").strip
+  end
+
+  def remote_command_exists?(command)
+    'true' == capture("if [ -x \"$(which #{command})\" ]; then echo 'true'; fi").strip
+  end
 
 
   #### Performs the initial setup for tasks ####
@@ -56,107 +64,6 @@ Capistrano::Configuration.instance(:must_exist).load do
     set :build_to, build_to rescue set :build_to, deploy_to
   end
 
-
-  #### Slicehost Namespace.... Allows Auto Creation of DNS ####
-
-  namespace :slicehost do
-
-    desc "Sets up slicehost DNS for each of the servers specified with a role of web."
-    task :setup do
-      pretty_print "*** You need to set a Slicehost API key in /etc/capistrano.conf to run this operation" if !defined? SLICEHOST_API_PASSWORD
-      exit if !defined? SLICEHOST_API_PASSWORD
-      get_slice_ip
-      servers = find_servers :roles => :web
-      servers.each do |s|
-        if !zone = Zone.find(:first, :params => {:origin => "#{s}."})
-          zone = Zone.new(:origin => s, :ttl => TTL)
-          zone.save
-        end
-        recordOne =   Record.new(:record_type => 'A', :zone_id => zone.id, :name => 'www', :data => "#{slice_ip}")
-        recordTwo =   Record.new(:record_type => 'A', :zone_id => zone.id, :name => '@', :data => "#{slice_ip}")
-        recordThree = Record.new(:record_type => 'A', :zone_id => zone.id, :name => 'beta', :data => "#{slice_ip}")
-        recordFour =  Record.new(:record_type => 'A', :zone_id => zone.id, :name => zone.origin, :data => "#{slice_ip}")
-        recordFive =  Record.new(:record_type => 'NS', :zone_id => zone.id, :name => zone.origin, :data => 'ns1.slicehost.net.')
-        recordSix =   Record.new(:record_type => 'NS', :zone_id => zone.id, :name => zone.origin, :data => 'ns2.slicehost.net.')
-        recordSeven = Record.new(:record_type => 'NS', :zone_id => zone.id, :name => zone.origin, :data => 'ns3.slicehost.net.')
-        [recordOne, recordTwo, recordThree, recordFour, recordFive, recordSix, recordSeven].each {|r| r.save}
-      end
-    end
-
-    task :get_slice_ip do
-      set :slice_ip, get_ip(fetch("host", false))
-    end
-
-    desc "Sets up slicehost DNS for Google Apps usage on each of the servers specified with a role of web."
-    task :googleapps do
-      pretty_print "*** You need to set a Slicehost API key in /etc/capistrano.conf to run this operation" if !defined? SLICEHOST_API_PASSWORD
-      exit if !defined? SLICEHOST_API_PASSWORD
-      SLICEHOST_API_PASSWORD = "#{slicehost_api_key}"
-      mx_records = <<-RECORD
-      ASPMX.L.GOOGLE.COM.
-      ALT1.ASPMX.L.GOOGLE.COM.
-      ALT2.ASPMX.L.GOOGLE.COM.
-      ASPMX2.GOOGLEMAIL.COM.
-      ASPMX3.GOOGLEMAIL.COM.
-      RECORD
-      servers = find_servers :roles => :web
-      servers.each do |s|
-        mx_aux =  %w[5 10 10 20 20 30 ]
-        aux_count = 0
-        zone = Zone.find(:first, :params => {:origin => "#{s}."})
-        mx_records.each do |rec|
-          r = Record.new(:record_type => 'MX', :zone_id => zone.id, :name => "#{s}." , :data => "#{rec}", :aux => mx_aux[aux_count])
-          r.save
-          aux_count =+ 1
-        end
-        recordOne =   Record.new(:record_type => 'CNAME', :zone_id => zone.id, :name => 'mail', :data => "ghs.google.com.")
-        recordTwo =   Record.new(:record_type => 'CNAME', :zone_id => zone.id, :name => 'docs', :data => "ghs.google.com.")
-        [recordOne, recordTwo].each {|r| r.save}
-      end
-    end
-
-  end
-
-
-  #### Github Namespace.... Allows Auto Creation of Repository, ssh keys and Repo permissions ####
-
-  namespace :github do
-
-    task :init do
-      pretty_print "*** You need to specify a github login and token to run this operation" if !defined? "#{github_login}" || !defined? "#{github_token}"
-      exit if !defined? "#{github_login}" || !defined? "#{github_token}"
-    end
-
-    desc "Sets up a Github Project and allows access for the devs at One Black Bear"
-    task :setup do
-      init
-      api = GithubApi.new("#{github_login}", "#{github_token}")
-      params = {
-        :name =>"#{application}",
-        :body  =>"Project for #{application}",
-        :public =>0
-      }
-      api.create_repo(params)
-      api.repo = "#{application}"
-      api.add_collaborator("rossriley")
-      api.add_collaborator("Sheldon")
-      api.add_collaborator("charlesmarshall")
-      api.add_collaborator("MichalNoskovic")
-      github:key
-    end
-
-    desc "Grabs the SSH key from the server and adds it to the Github deploy keys"
-    task :key do
-      init
-      api = GithubApi.new("#{github_login}", "#{github_token}")
-      app:ssh_key
-      server_ssh_key = capture("cat .ssh/id_rsa.pub")
-      server_ssh_key
-      api.add_key({:title=>"#{host}",:key=>server_ssh_key})
-    end
-
-
-  end
 
   namespace :app do
 
@@ -479,7 +386,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
     task :needs_root do
-      puts "*** This operation needs root access - Please set a root password inside your /etc/capistrano.conf file" if !defined? "#{root_pass}".red
+      puts "==> This operation needs root access - Please set a root password inside your /etc/capistrano.conf file".red if !defined? "#{root_pass}"
       exit if !defined? "#{root_pass}"
       config_check
     end
@@ -492,7 +399,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       rescue
         print "==== The user does not yet exist. Would you like to create? [Y/N]"
         line = STDIN.gets.upcase.strip
-        puts "*** Could not continue as the login does not exist" if line !="Y"
+        puts "==> Could not continue as the login does not exist" if line !="Y".red
         exit if line != "Y"
         setup_user
       end
@@ -624,13 +531,13 @@ Capistrano::Configuration.instance(:must_exist).load do
     if defined? "#{newdeploy}" then
       if defined? "#{plugins}"
         plugins.each do |plugin|
-          print "plugin: #{plugin}\n"
+          puts "plugin: #{plugin}\n".green
           paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
         end
       end
       puts "--"
       paths.each do |path|
-        puts "folders: #{path}\n"
+        puts "folders: #{path}\n".green
       end
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
@@ -694,6 +601,79 @@ Capistrano::Configuration.instance(:must_exist).load do
       end - [nil]
     end
 
+  end
+  
+  
+  namespace :composer do
+    desc "Gets composer and installs it"
+    task :get, :roles => :app, :except => { :no_release => true } do
+      if !remote_file_exists?("#{deploy_to}/composer.phar")
+        pretty_print "--> Downloading Composer"
+
+        run "#{try_sudo} sh -c 'cd #{deploy_to} && curl -s http://getcomposer.org/installer | #{php_bin}'"
+      else
+        pretty_print "--> Updating Composer"
+
+        run "#{try_sudo} sh -c 'cd #{deploy_to} && #{php_bin} composer.phar self-update'"
+      end
+      puts_ok
+    end
+
+    desc "Updates composer"
+    task :self_update, :roles => :app, :except => { :no_release => true } do
+      pretty_print "--> Updating Composer"
+      run "#{try_sudo} sh -c 'cd #{deploy_to} && #{composer_bin} self-update'"
+      puts_ok
+    end
+
+    desc "Runs composer to install vendors from composer.lock file"
+    task :install, :roles => :app, :except => { :no_release => true } do
+      if composer_bin
+        composer.self_update
+      else
+        composer.get
+        set :composer_bin, "#{php_bin} composer.phar"
+      end
+
+      pretty_print "--> Installing Composer dependencies"
+      run "#{try_sudo} sh -c 'cd #{deploy_to} && #{composer_bin} install #{composer_options}'"
+      puts_ok
+    end
+
+    desc "Runs composer to update vendors, and composer.lock file"
+    task :update, :roles => :app, :except => { :no_release => true } do
+      if composer_bin
+        composer.self_update
+      else
+        composer.get
+        set :composer_bin, "#{php_bin} composer.phar"
+      end
+
+      pretty_print "--> Updating Composer dependencies"
+      run "#{try_sudo} sh -c 'cd #{deploy_to} && #{composer_bin} update #{composer_options}'"
+      puts_ok
+    end
+
+    desc "Dumps an optimized autoloader"
+    task :dump_autoload, :roles => :app, :except => { :no_release => true } do
+      if composer_bin
+        composer.self_update
+      else
+        composer.get
+        set :composer_bin, "#{php_bin} composer.phar"
+      end
+
+      pretty_print "--> Dumping an optimized autoloader"
+      run "#{try_sudo} sh -c 'cd #{deploy_to} && #{composer_bin} dump-autoload --optimize'"
+      puts_ok
+    end
+
+    task :copy_vendors, :except => { :no_release => true } do
+      pretty_print "--> Copying vendors from previous release"
+
+      run "vendorDir=#{current_path}/vendor; if [ -d $vendorDir ] || [ -h $vendorDir ]; then cp -a $vendorDir #{deploy_to}/vendor; fi;"
+      puts_ok
+    end
   end
 
 
