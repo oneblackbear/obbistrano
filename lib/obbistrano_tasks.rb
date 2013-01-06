@@ -1,5 +1,54 @@
 Capistrano::Configuration.instance(:must_exist).load do
 
+  #### Global helper methods ######
+  
+  STDOUT.sync
+  $error = false
+  $pretty_errors_defined = false
+
+  # Be less verbose by default
+  logger.level = Capistrano::Logger::IMPORTANT
+  
+  def pretty_print(msg)
+    if logger.level == Capistrano::Logger::IMPORTANT
+      pretty_errors
+      msg = msg.slice(0, 57)
+      msg << '.' * (60 - msg.size)
+      print msg
+    else
+      puts msg.green
+    end
+  end
+  
+  def puts_ok
+    if logger.level == Capistrano::Logger::IMPORTANT && !$error
+      puts '✔'.green
+    end
+    $error = false
+  end
+  
+  def pretty_errors
+    if !$pretty_errors_defined
+      $pretty_errors_defined = true
+
+      class << $stderr
+        @@firstLine = true
+        alias _write write
+
+        def write(s)
+          if @@firstLine
+            s = '✘' << "\n" << s
+            @@firstLine = false
+          end
+
+          _write(s.red)
+          $error = true
+        end
+      end
+    end
+  end
+
+
   #### Performs the initial setup for tasks ####
   task :config_setup do
     set :root_pass, root rescue nil
@@ -14,7 +63,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     desc "Sets up slicehost DNS for each of the servers specified with a role of web."
     task :setup do
-      puts "*** You need to set a Slicehost API key in /etc/capistrano.conf to run this operation" if !defined? SLICEHOST_API_PASSWORD
+      pretty_print "*** You need to set a Slicehost API key in /etc/capistrano.conf to run this operation" if !defined? SLICEHOST_API_PASSWORD
       exit if !defined? SLICEHOST_API_PASSWORD
       get_slice_ip
       servers = find_servers :roles => :web
@@ -40,7 +89,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     desc "Sets up slicehost DNS for Google Apps usage on each of the servers specified with a role of web."
     task :googleapps do
-      puts "*** You need to set a Slicehost API key in /etc/capistrano.conf to run this operation" if !defined? SLICEHOST_API_PASSWORD
+      pretty_print "*** You need to set a Slicehost API key in /etc/capistrano.conf to run this operation" if !defined? SLICEHOST_API_PASSWORD
       exit if !defined? SLICEHOST_API_PASSWORD
       SLICEHOST_API_PASSWORD = "#{slicehost_api_key}"
       mx_records = <<-RECORD
@@ -74,7 +123,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :github do
 
     task :init do
-      puts "*** You need to specify a github login and token to run this operation" if !defined? "#{github_login}" || !defined? "#{github_token}"
+      pretty_print "*** You need to specify a github login and token to run this operation" if !defined? "#{github_login}" || !defined? "#{github_token}"
       exit if !defined? "#{github_login}" || !defined? "#{github_token}"
     end
 
@@ -120,7 +169,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       deploy_check
       php_wax_deploy if defined? "#{phpwax}"
       cms_deploy if defined? "#{cms}"
-      symlink if defined? "#{environment}"
+      symlink if defined? "#{app_environment}"
       bundle.css
       bundle.js
     end
@@ -289,7 +338,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       command << tmp_cron_file
 
       if system(command.join(' '))
-        puts "[write] crontab file updated"
+        pretty_print "[write] crontab file updated"
         exit
       else
         warn "[fail] couldn't write crontab"
@@ -406,7 +455,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         run "cat /etc/debian_version"
         set :os_ver, "ubuntu"
       rescue
-        puts "*** Operating System could not be detected or is not supported" if !defined? "#{os_ver}"
+        puts "*** Operating System could not be detected or is not supported" if !defined? "#{os_ver}".red
         exit if !defined? "#{os_ver}"
       end
       eval "#{os_ver}".testos
@@ -430,7 +479,7 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
     task :needs_root do
-      puts "*** This operation needs root access - Please set a root password inside your /etc/capistrano.conf file" if !defined? "#{root_pass}"
+      puts "*** This operation needs root access - Please set a root password inside your /etc/capistrano.conf file" if !defined? "#{root_pass}".red
       exit if !defined? "#{root_pass}"
       config_check
     end
