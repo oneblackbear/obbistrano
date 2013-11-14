@@ -1,13 +1,13 @@
 Capistrano::Configuration.instance(:must_exist).load do
 
   #### Global helper methods ######
-  
+
   STDOUT.sync
   $error = false
 
   # Be less verbose by default
   #logger.level = Capistrano::Logger::IMPORTANT
-  
+
   def pretty_print(msg)
     if logger.level == Capistrano::Logger::IMPORTANT
       msg = msg.slice(0, 87)
@@ -17,19 +17,19 @@ Capistrano::Configuration.instance(:must_exist).load do
       puts msg.green
     end
   end
-  
+
   def puts_ok
     if logger.level == Capistrano::Logger::IMPORTANT && !$error
       puts '✔'.green
     end
     $error = false
   end
-  
+
   def puts_fail
     puts '✘'.red
   end
-  
-  
+
+
   def remote_file_exists?(full_path)
     'true' == capture("if [ -e #{full_path} ]; then echo 'true'; fi").strip
   end
@@ -37,28 +37,28 @@ Capistrano::Configuration.instance(:must_exist).load do
   def remote_command_exists?(command)
     'true' == capture("if [ -x \"$(which #{command})\" ]; then echo 'true'; fi").strip
   end
-  
+
   #### Variable defaults
   set :php_bin,            "php"
-  
+
   # Flags an app to install composer - false by default
   set :use_composer,       false
-  
+
   # If set to false download/install composer
   set :composer_bin,       false
-  
+
   # Options to pass to composer when installing/updating
   set :composer_options,   "--no-scripts --verbose --prefer-dist"
 
   # Whether to update vendors using the configured dependency manager (composer or bin/vendors)
   set :update_vendors,     false
-  
+
   # run bin/vendors script in mode (upgrade, install (faster if shared /vendor folder) or reinstall)
   set :vendors_mode,      "reinstall"
 
   # Path to deploy to after login. Defaults to root
   set :deploy_to,         '.'
-  
+
 
   #### Performs the initial setup for tasks ####
   task :config_setup do
@@ -77,14 +77,14 @@ Capistrano::Configuration.instance(:must_exist).load do
     task :full_deploy, :roles =>[:web] do
       host.config_check
       deploy_check
-      php_wax_deploy if defined? "#{phpwax}"
-      cms_deploy if defined? "#{cms}"
-      symlink if defined? "#{app_environment}"
+      php_wax_deploy if defined? phpwax
+      cms_deploy if defined? cms
+      symlink if defined? app_environment
       composer.install if use_composer
       bundle.css
       bundle.js
     end
-    
+
     task :symlink, :roles =>[:web] do
       run "ln -s #{deploy_to}/app/config/bootstrap_#{environment}.php #{deploy_to}/app/config/bootstrap.php"
     end
@@ -114,7 +114,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     task :git_deploy, :roles =>[:web] do
       puts "*** Application being updated on branch #{branch}".yellow
-      
+
       set :local_branch, $1 if `git branch` =~ /\* (\S+)\s/m
       if !local_branch.eql? branch
         pretty_print "You are on branch #{local_branch}, not #{branch}, please check out there before deploying to be able to combine the correct js and css files.".red
@@ -122,7 +122,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         exit
       end
 
-      if defined? "#{commit}"
+      if defined? commit
         pretty_print "--> Deploy from #{repository} on commit #{commit}"
       else
         pretty_print "--> Deploy from #{repository} on branch #{branch}"
@@ -150,7 +150,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         exit
       end
       logger.level = 0
-      if defined? "#{commit}"
+      if defined? commit
         run "cd #{deploy_to} && git checkout #{commit} && git submodule update --init --recursive"
       else
         logger.level = -1
@@ -170,7 +170,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
     task :cms_deploy, :roles =>[:web] do
       pretty_print "--> Updating Wildfire CMS on branch #{cms}"
-      
+
       run "mkdir -p #{deploy_to}/plugins/cms"
       begin
         run "ls #{deploy_to}/plugins/cms/.git/"
@@ -267,7 +267,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       end
 
       command = ['crontab']
-      command << "-u #{user}" if defined? "#{user}"
+      command << "-u #{user}" if defined? user
       command << tmp_cron_file
 
       if system(command.join(' '))
@@ -512,7 +512,7 @@ Capistrano::Configuration.instance(:must_exist).load do
 
   task :css, :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/stylesheets")
-    if defined? "#{newdeploy}" then
+    if defined? newdeploy then
       if defined? "#{plugins}"
         plugins.each do |plugin|
           pretty_print "-->    Adding Plugin: #{plugin}"
@@ -520,7 +520,7 @@ Capistrano::Configuration.instance(:must_exist).load do
           paths << "#{build_to}/plugins/#{plugin}/resources/public/stylesheets"
         end
       end
-    
+
       Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
       paths.each do |bundle_directory|
         bundle_name = bundle_directory.gsub("#{build_to}/", "").gsub("plugins/", "").gsub("/resources/public/stylesheets", "").gsub("public/stylesheets/", "")
@@ -561,7 +561,7 @@ Capistrano::Configuration.instance(:must_exist).load do
   end
   task :js , :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/javascripts")
-    if defined? "#{newdeploy}" then
+    if defined? newdeploy then
       if defined? "#{plugins}"
         plugins.each do |plugin|
           pretty_print "-->    Adding plugin: #{plugin}"
@@ -569,7 +569,7 @@ Capistrano::Configuration.instance(:must_exist).load do
           paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
         end
       end
-      
+
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
         bundle_name = bundle_directory.gsub("#{build_to}/", "").gsub("plugins/", "").gsub("/resources/public/javascripts", "").gsub("public/javascripts/", "")
@@ -586,7 +586,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         puts_ok
       end
     else
-      paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts") if defined? "#{cms}"
+      paths = paths | get_top_level_directories("#{build_to}/plugins/cms/resources/public/javascripts") if defined? cms
       paths << "#{build_to}/public/javascripts/"
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
@@ -634,8 +634,8 @@ Capistrano::Configuration.instance(:must_exist).load do
     end
 
   end
-  
-  
+
+
   namespace :composer do
     desc "Gets composer and installs it"
     task :get, :roles => :web, :except => { :no_release => true } do
@@ -646,7 +646,7 @@ Capistrano::Configuration.instance(:must_exist).load do
           puts_ok
         rescue
           puts_fail
-        end 
+        end
       else
         pretty_print "--> Updating Composer"
         begin
@@ -669,7 +669,7 @@ Capistrano::Configuration.instance(:must_exist).load do
         puts_ok
       rescue
         puts_fail
-      end 
+      end
     end
 
     desc "Runs composer to install vendors from composer.lock file"
@@ -691,7 +691,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       rescue
         puts_fail
         puts composer_out.white_on_red
-      end 
+      end
     end
 
     desc "Runs composer to update vendors, and composer.lock file"
@@ -712,7 +712,7 @@ Capistrano::Configuration.instance(:must_exist).load do
       rescue
         puts_fail
         puts composer_out.white_on_red
-      end 
+      end
     end
 
     desc "Dumps an optimized autoloader"
@@ -733,8 +733,8 @@ Capistrano::Configuration.instance(:must_exist).load do
       rescue
         puts_fail
         puts composer_out.white_on_red
-      end      
-      
+      end
+
     end
 
   end
