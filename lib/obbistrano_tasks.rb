@@ -3,26 +3,18 @@ Capistrano::Configuration.instance(:must_exist).load do
   #### Global helper methods ######
 
   STDOUT.sync
-  $error = false
 
   # Be less verbose by default
-  #logger.level = Capistrano::Logger::IMPORTANT
+  logger.level = Capistrano::Logger::INFO
 
   def pretty_print(msg)
-    if logger.level == Capistrano::Logger::IMPORTANT
-      msg = msg.slice(0, 87)
-      msg << '.' * (90 - msg.size)
-      print msg
-    else
-      puts msg.green
-    end
+    msg = msg.slice(0, 87)
+    msg << '.' * (90 - msg.size)
+    print msg
   end
 
   def puts_ok
-    if logger.level == Capistrano::Logger::IMPORTANT && !$error
-      puts '✔'.green
-    end
-    $error = false
+    puts '✔'.green
   end
 
   def puts_fail
@@ -512,17 +504,16 @@ Capistrano::Configuration.instance(:must_exist).load do
 
   task :css, :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/stylesheets")
-    if defined? newdeploy then
-      if defined? "#{plugins}"
-        plugins.each do |plugin|
-          pretty_print "-->    Adding Plugin: #{plugin}"
-          puts_ok
-          paths << "#{build_to}/plugins/#{plugin}/resources/public/stylesheets"
-        end
+    if newdeploy=='yes' then
+      plugins.each do |plugin|
+        pretty_print "-->    Adding Plugin: #{plugin}"
+        puts_ok
+        paths << "#{build_to}/plugins/#{plugin}/resources/public/stylesheets"
       end
 
       Dir.mkdir("#{build_to}/public/stylesheets/build") rescue ""
       paths.each do |bundle_directory|
+        next if !File.directory?(bundle_directory)
         bundle_name = bundle_directory.gsub("#{build_to}/", "").gsub("plugins/", "").gsub("/resources/public/stylesheets", "").gsub("public/stylesheets/", "")
         next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".css")
@@ -561,17 +552,16 @@ Capistrano::Configuration.instance(:must_exist).load do
   end
   task :js , :roles => [:web] do
     paths = get_top_level_directories("#{build_to}/public/javascripts")
-    if defined? newdeploy then
-      if defined? "#{plugins}"
-        plugins.each do |plugin|
-          pretty_print "-->    Adding plugin: #{plugin}"
-          puts_ok
-          paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
-        end
+    if newdeploy=='yes' then
+      plugins.each do |plugin|
+        pretty_print "-->    Adding plugin: #{plugin}"
+        puts_ok
+        paths << "#{build_to}/plugins/#{plugin}/resources/public/javascripts"
       end
 
       Dir.mkdir("#{build_to}/public/javascripts/build") rescue ""
       paths.each do |bundle_directory|
+        next if !File.directory?(bundle_directory)
         bundle_name = bundle_directory.gsub("#{build_to}/", "").gsub("plugins/", "").gsub("/resources/public/javascripts", "").gsub("public/javascripts/", "")
         next if bundle_name.empty?
         files = recursive_file_list(bundle_directory, ".js")

@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{obbistrano}
-  s.version = "1.1.156"
+  s.version = "1.1.168"
   s.authors = ["Ross Riley", "One Black Bear"]
   s.license = 'MIT'
   s.date = Time.now
@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.summary = %q{Adds extra namespaces to Capistrano to allow simple setup, deploys and maintenance.}
 
 
-  s.add_dependency 'capistrano', "~> 2.13.5"
+  s.add_dependency 'capistrano', "~> 2.15.5"
   s.add_dependency 'colored', ">= 1.2.0"
   s.add_dependency 'inifile', ">= 2.0.2"
   s.add_dependency 'capistrano-maintenance', '0.0.2'
